@@ -20,6 +20,15 @@ export interface CreditTransaction {
   createdAt: string;
 }
 
+export interface CreditUsageSummary {
+  totalUsed: number;
+  totalAdded: number;
+  totalRefunded: number;
+  transactionCount: number;
+  firstTransactionAt: string | null;
+  lastTransactionAt: string | null;
+}
+
 class UserRepository {
   private getUserStatement = db.prepare('SELECT * FROM users WHERE discordId = ?');
   private getUserByIdStatement = db.prepare('SELECT * FROM users WHERE id = ?');
@@ -44,6 +53,18 @@ class UserRepository {
       AND (? IS NULL OR t.type = ?)
     ORDER BY t.id DESC
     LIMIT ?
+  `);
+  private getCreditUsageSummaryStatement = db.prepare(`
+    SELECT
+      COALESCE(SUM(CASE WHEN t.type = 'use' THEN t.amount ELSE 0 END), 0) AS totalUsed,
+      COALESCE(SUM(CASE WHEN t.type = 'add' THEN t.amount ELSE 0 END), 0) AS totalAdded,
+      COALESCE(SUM(CASE WHEN t.type = 'refund' THEN t.amount ELSE 0 END), 0) AS totalRefunded,
+      COUNT(*) AS transactionCount,
+      MIN(t.createdAt) AS firstTransactionAt,
+      MAX(t.createdAt) AS lastTransactionAt
+    FROM transactions t
+    INNER JOIN users u ON u.id = t.userId
+    WHERE u.discordId = ?
   `);
 
   getOrCreateUser(discordId: string, username: string): User {
@@ -105,6 +126,21 @@ class UserRepository {
     type: TransactionType | null = null
   ): CreditTransaction[] {
     return this.getRecentTransactionsStatement.all(discordId, type, type, limit) as CreditTransaction[];
+  }
+
+  getCreditUsageSummary(discordId: string): CreditUsageSummary {
+    const summary = this.getCreditUsageSummaryStatement.get(discordId) as
+      | CreditUsageSummary
+      | undefined;
+
+    return {
+      totalUsed: summary?.totalUsed ?? 0,
+      totalAdded: summary?.totalAdded ?? 0,
+      totalRefunded: summary?.totalRefunded ?? 0,
+      transactionCount: summary?.transactionCount ?? 0,
+      firstTransactionAt: summary?.firstTransactionAt ?? null,
+      lastTransactionAt: summary?.lastTransactionAt ?? null,
+    };
   }
 }
 
