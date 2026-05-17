@@ -4,6 +4,7 @@ import { loadCommands } from './handlers/commandHandler';
 import { handleInteraction } from './handlers/interactionHandler';
 import { handleMessage } from './handlers/messageHandler';
 import { startApiServer } from './server';
+import scheduleService from './services/scheduleService';
 
 const client = new Client({
   intents: [
@@ -22,6 +23,7 @@ client.once('ready', async () => {
   console.log(`✅ Logged in as ${client.user?.tag}`);
   // Load commands into the in-memory collection
   await loadCommands(client);
+  await scheduleService.initialize(client);
 });
 
 // Handle slash commands and button interactions

@@ -9,6 +9,7 @@ import { planCommand } from '../commands/plan';
 import { subscribeCommand } from '../commands/subscribe';
 import { exportCommand } from '../commands/export';
 import { reportCommand } from '../commands/report';
+import { scheduleCommand } from '../commands/schedule';
 
 export interface Command {
   data: {
@@ -28,6 +29,7 @@ const commands: Command[] = [
   planCommand,
   exportCommand,
   reportCommand,
+  scheduleCommand,
 ];
 
 export async function loadCommands(client: Client): Promise<void> {
