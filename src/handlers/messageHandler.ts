@@ -1,46 +1,78 @@
-import { Message, Client } from 'discord.js';
-import { routeToLLM } from '../llm/router';
-import { getRecentMessages, saveMessage } from '../db/conversationRepository';
+import { Client, Message } from 'discord.js';
+import { conversationHistory } from '../conversation/history';
+import {
+  INSUFFICIENT_CREDITS_MESSAGE,
+  InsufficientCreditsError,
+  creditsChecker,
+} from '../credits/checker';
+import { creditsManager } from '../credits/manager';
+import UserRepository from '../db/userRepository';
+import { resolveModelChoice, routeToLLM } from '../llm/router';
 
 export async function handleMessage(message: Message, client: Client): Promise<void> {
-  // Ignore bot messages
-  if (message.author.bot) return;
+  if (message.author.bot) {
+    return;
+  }
 
   const isDM = message.channel.isDMBased();
   const isMentioned = client.user ? message.mentions.has(client.user) : false;
 
-  // Respond to DMs (no mention needed) or server mentions
-  if (!isDM && !isMentioned) return;
-
-  const userId = message.author.id;
-  const channelId = message.channel.id;
-
-  // Fetch the last 10 messages for context
-  const history = await getRecentMessages(userId, channelId);
-
-  // Format messages for the LLM
-  const messages = history.map((msg) => ({ role: msg.role, content: msg.content }));
-
-  // Append the current message
-  messages.push({ role: 'user', content: message.content.trim() });
-
-  console.log(`[MSG] Fetching history and processing message with userId=${userId} channelId=${channelId}`);
-
-  if ('sendTyping' in message.channel) {
-    await (message.channel as any).sendTyping();
+  if (!isDM && !isMentioned) {
+    return;
   }
 
-  try {
-    // Pass message history to the LLM
-    const result = await routeToLLM(message.content, 'auto', messages);
+  const prompt = message.content.trim();
+  if (!prompt) {
+    return;
+  }
 
-    // Save current interaction
-    await saveMessage(userId, channelId, 'user', message.content);
-    await saveMessage(userId, channelId, 'assistant', result);
+  const discordId = message.author.id;
+  const username = message.author.username;
+  const channelId = message.channel.id;
+  const user = UserRepository.getOrCreateUser(discordId, username);
+  const selectedModel = resolveModelChoice(prompt, 'auto');
+
+  console.log(
+    `[MSG] channelId=${channelId} discordId=${discordId} model=${selectedModel}`
+  );
+
+  let creditsCharged = false;
+
+  try {
+    creditsChecker.ensureSufficientCredits(discordId, username, selectedModel);
+
+    const history = await conversationHistory.getRecent(channelId);
+    const messages = [...history, { role: 'user' as const, content: prompt }];
+
+    if ('sendTyping' in message.channel) {
+      await message.channel.sendTyping();
+    }
+
+    creditsManager.consume(discordId, username, selectedModel);
+    creditsCharged = true;
+
+    const result = await routeToLLM(prompt, selectedModel, messages);
+
+    await conversationHistory.append(channelId, user.id, 'user', prompt);
+    await conversationHistory.append(channelId, user.id, 'assistant', result);
 
     await message.reply(result.slice(0, 1900));
-  } catch (err) {
-    console.error('Error in handleMessage:', err);
+  } catch (error) {
+    if (error instanceof InsufficientCreditsError) {
+      await message.reply(INSUFFICIENT_CREDITS_MESSAGE);
+      return;
+    }
+
+    console.error('Error in handleMessage:', error);
+
+    if (creditsCharged) {
+      try {
+        creditsManager.refund(discordId, username, selectedModel, 'LLM call failed');
+      } catch (refundError) {
+        console.error('Failed to refund credits:', refundError);
+      }
+    }
+
     await message.reply('❌ Something went wrong. Please try again.');
   }
 }

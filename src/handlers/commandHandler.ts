@@ -4,6 +4,7 @@ import { taskCommand } from '../commands/task';
 import { researchCommand } from '../commands/research';
 import { createCommand } from '../commands/create';
 import { codeCommand } from '../commands/code';
+import { creditsCommand } from '../commands/credits';
 
 export interface Command {
   data: {
@@ -18,6 +19,7 @@ const commands: Command[] = [
   researchCommand,
   createCommand,
   codeCommand,
+  creditsCommand,
 ];
 
 export async function loadCommands(client: Client): Promise<void> {

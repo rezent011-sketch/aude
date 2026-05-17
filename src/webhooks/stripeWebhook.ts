@@ -1,30 +1,50 @@
-import { Request, Response } from 'express';
 import Stripe from 'stripe';
 
-const stripe = new Stripe('your-stripe-secret-key', {
-  apiVersion: '2020-08-27',
-});
+interface StripeWebhookRequest {
+  headers: Record<string, string | string[] | undefined>;
+  body: Buffer | string;
+}
 
-export const stripeWebhook = async (req: Request, res: Response) => {
-  const sig = req.headers['stripe-signature'];
+interface StripeWebhookResponse {
+  status(code: number): StripeWebhookResponse;
+  send(body: string): void;
+  json(body: unknown): void;
+}
 
-  let event;
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+if (!stripeSecretKey) {
+  throw new Error('STRIPE_SECRET_KEY is not set');
+}
+
+const stripe = new Stripe(stripeSecretKey);
+
+export const stripeWebhook = async (
+  req: StripeWebhookRequest,
+  res: StripeWebhookResponse
+): Promise<void> => {
+  const signatureHeader = req.headers['stripe-signature'];
+  const signature = Array.isArray(signatureHeader) ? signatureHeader[0] : signatureHeader;
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  if (!signature || !webhookSecret) {
+    res.status(400).send('Webhook Error: missing signature or webhook secret');
+    return;
+  }
+
+  let event: ReturnType<typeof stripe.webhooks.constructEvent>;
 
   try {
-    event = stripe.webhooks.constructEvent(
-      req.body,
-      sig,
-      'your-webhook-signing-secret'
-    );
-  } catch (err) {
-    return res.status(400).send(`Webhook Error: ${err.message}`);
+    event = stripe.webhooks.constructEvent(req.body, signature, webhookSecret);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    res.status(400).send(`Webhook Error: ${message}`);
+    return;
   }
 
   if (event.type === 'payment_intent.succeeded') {
-    const paymentIntent = event.data.object;
-    // Logic to add credits to the user's account
+    const paymentIntent = event.data.object as { amount: number };
     console.log(`PaymentIntent for ${paymentIntent.amount} was successful!`);
   }
 
-  res.json({received: true});
+  res.json({ received: true });
 };

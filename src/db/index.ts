@@ -1,44 +1,59 @@
 import Database from 'better-sqlite3';
+import fs from 'fs';
 import path from 'path';
 
-// Initialize the SQLite database
 const dbPath = path.join(__dirname, '../../data/aude.db');
+
+fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+
 const db = new Database(dbPath);
 
-// Create users table
-const createUsersTable = `
+db.pragma('foreign_keys = ON');
+
+db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     discordId TEXT UNIQUE NOT NULL,
     username TEXT NOT NULL,
-    credits INTEGER DEFAULT 100,
+    credits INTEGER NOT NULL DEFAULT 100,
     createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
     updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
   );
-`;
-db.exec(createUsersTable);
+`);
 
-// Create transactions table
-const createTransactionsTable = `
+db.exec(`
   CREATE TABLE IF NOT EXISTS transactions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    userId INTEGER,
+    userId INTEGER NOT NULL,
     type TEXT CHECK(type IN ('add', 'use', 'refund')) NOT NULL,
     amount INTEGER NOT NULL,
     description TEXT,
     createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (userId) REFERENCES users(id)
+  );
+`);
+
+db.exec(`
   CREATE TABLE IF NOT EXISTS conversations (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    userId INTEGER,
-    discordChannelId TEXT,
-    role TEXT,
-    content TEXT,
-    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    userId INTEGER NOT NULL,
+    discordChannelId TEXT NOT NULL,
+    role TEXT NOT NULL,
+    content TEXT NOT NULL,
+    createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (userId) REFERENCES users(id)
   );
-  );
-`;
-db.exec(createTransactionsTable);
+`);
+
+db.exec(`
+  CREATE TRIGGER IF NOT EXISTS users_set_updated_at
+  AFTER UPDATE ON users
+  FOR EACH ROW
+  BEGIN
+    UPDATE users
+    SET updatedAt = CURRENT_TIMESTAMP
+    WHERE id = NEW.id;
+  END;
+`);
 
 export default db;

@@ -5,16 +5,18 @@ if (!stripeSecretKey) {
   throw new Error('Stripe secret key is not set in environment variables.');
 }
 
-const stripe = new Stripe(stripeSecretKey, {
-  apiVersion: '2020-08-27',
-});
+const stripe = new Stripe(stripeSecretKey);
 
-export async function createCheckoutSession(plan: string) {
-  const prices = {
+const prices = {
     starter: 980,
     pro: 2980,
     team: 9800,
-  };
+} as const;
+
+export async function createCheckoutSession(plan: keyof typeof prices) {
+  if (!(plan in prices)) {
+    throw new Error(`Unknown subscription plan: ${plan}`);
+  }
 
   const successUrl = process.env.APP_URL + '/success';
   const cancelUrl = process.env.APP_URL + '/cancel';

@@ -1,6 +1,6 @@
 import db from './index';
 
-export interface Message {
+export interface MessageRecord {
   id: number;
   userId: number;
   discordChannelId: string;
@@ -9,12 +9,47 @@ export interface Message {
   createdAt: string;
 }
 
-export const getRecentMessages = async (userId: number, channelId: string, limit: number = 10): Promise<Message[]> => {
-  return db.prepare('SELECT * FROM conversations WHERE userId = ? AND discordChannelId = ? ORDER BY createdAt DESC LIMIT ?').all(userId, channelId, limit);
-};
+const getRecentMessagesByChannelStatement = db.prepare(`
+  SELECT *
+  FROM conversations
+  WHERE discordChannelId = ?
+  ORDER BY id DESC
+  LIMIT ?
+`);
 
+const insertMessageStatement = db.prepare(`
+  INSERT INTO conversations (userId, discordChannelId, role, content)
+  VALUES (?, ?, ?, ?)
+`);
 
-export const saveMessage = async (userId: number, channelId: string, role: string, content: string): Promise<void> => {
-  db.prepare('INSERT INTO conversations (userId, discordChannelId, role, content) VALUES (?, ?, ?, ?)').run(userId, channelId, role, content);
-};
+const trimMessagesByChannelStatement = db.prepare(`
+  DELETE FROM conversations
+  WHERE discordChannelId = ?
+    AND id NOT IN (
+      SELECT id
+      FROM conversations
+      WHERE discordChannelId = ?
+      ORDER BY id DESC
+      LIMIT ?
+    )
+`);
 
+export async function getRecentMessagesByChannel(
+  channelId: string,
+  limit = 10
+): Promise<MessageRecord[]> {
+  return getRecentMessagesByChannelStatement.all(channelId, limit) as MessageRecord[];
+}
+
+export async function saveMessage(
+  userId: number,
+  channelId: string,
+  role: string,
+  content: string
+): Promise<void> {
+  insertMessageStatement.run(userId, channelId, role, content);
+}
+
+export async function trimMessagesByChannel(channelId: string, limit = 10): Promise<void> {
+  trimMessagesByChannelStatement.run(channelId, channelId, limit);
+}

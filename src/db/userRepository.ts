@@ -1,6 +1,6 @@
 import db from './index';
 
-interface User {
+export interface User {
   id: number;
   discordId: string;
   username: string;
@@ -9,43 +9,102 @@ interface User {
   updatedAt: string;
 }
 
-class UserRepository {
-  getOrCreateUser(discordId: string, username: string): User {
-    const getUser = db.prepare('SELECT * FROM users WHERE discordId = ?');
-    const user = getUser.get(discordId);
-    if (user) return user;
+export type TransactionType = 'add' | 'use' | 'refund';
 
-    const insertUser = db.prepare(`
-      INSERT INTO users (discordId, username, credits) 
-      VALUES (?, ?, 100)
-    `);
-    const info = insertUser.run(discordId, username);
-    return this.getUserById(info.lastInsertRowid);
+export interface CreditTransaction {
+  id: number;
+  userId: number;
+  type: TransactionType;
+  amount: number;
+  description: string | null;
+  createdAt: string;
+}
+
+class UserRepository {
+  private getUserStatement = db.prepare('SELECT * FROM users WHERE discordId = ?');
+  private getUserByIdStatement = db.prepare('SELECT * FROM users WHERE id = ?');
+  private insertUserStatement = db.prepare(`
+    INSERT INTO users (discordId, username, credits)
+    VALUES (?, ?, 100)
+  `);
+  private updateCreditsStatement = db.prepare(`
+    UPDATE users
+    SET credits = credits + ?
+    WHERE discordId = ?
+  `);
+  private insertTransactionStatement = db.prepare(`
+    INSERT INTO transactions (userId, type, amount, description)
+    VALUES (?, ?, ?, ?)
+  `);
+  private getRecentTransactionsStatement = db.prepare(`
+    SELECT t.*
+    FROM transactions t
+    INNER JOIN users u ON u.id = t.userId
+    WHERE u.discordId = ?
+      AND (? IS NULL OR t.type = ?)
+    ORDER BY t.id DESC
+    LIMIT ?
+  `);
+
+  getOrCreateUser(discordId: string, username: string): User {
+    const existingUser = this.getUser(discordId);
+    if (existingUser) {
+      if (existingUser.username !== username) {
+        db.prepare('UPDATE users SET username = ? WHERE discordId = ?').run(username, discordId);
+        return this.getUser(discordId)!;
+      }
+      return existingUser;
+    }
+
+    const info = this.insertUserStatement.run(discordId, username);
+    return this.getUserById(Number(info.lastInsertRowid));
   }
 
   getUser(discordId: string): User | null {
-    const getUser = db.prepare('SELECT * FROM users WHERE discordId = ?');
-    return getUser.get(discordId) || null;
+    return (this.getUserStatement.get(discordId) as User | undefined) ?? null;
   }
 
-  updateCredits(discordId: string, delta: number, description: string): void {
+  getUserById(id: number): User {
+    const user = this.getUserByIdStatement.get(id) as User | undefined;
+    if (!user) {
+      throw new Error(`User not found for id=${id}`);
+    }
+    return user;
+  }
+
+  updateCredits(
+    discordId: string,
+    delta: number,
+    description: string,
+    type: TransactionType = delta < 0 ? 'use' : 'add'
+  ): void {
     const user = this.getUser(discordId);
-    if (!user) throw new Error('User not found');
+    if (!user) {
+      throw new Error(`User not found for discordId=${discordId}`);
+    }
 
-    const updateCredits = db.prepare('UPDATE users SET credits = credits + ? WHERE discordId = ?');
-    updateCredits.run(delta, discordId);
+    const applyChange = db.transaction(() => {
+      this.updateCreditsStatement.run(delta, discordId);
+      this.insertTransactionStatement.run(user.id, type, Math.abs(delta), description);
+    });
 
-    const insertTransaction = db.prepare(`
-      INSERT INTO transactions (userId, type, amount, description) 
-      VALUES (?, ?, ?, ?)
-    `);
-    insertTransaction.run(user.id, delta >= 0 ? 'add' : 'use', Math.abs(delta), description);
+    applyChange();
   }
 
   getCredits(discordId: string): number {
     const user = this.getUser(discordId);
-    if (!user) throw new Error('User not found');
+    if (!user) {
+      throw new Error(`User not found for discordId=${discordId}`);
+    }
     return user.credits;
+  }
+
+  getRecentTransactions(
+    discordId: string,
+    limit = 5,
+    type: TransactionType | null = null
+  ): CreditTransaction[] {
+    return this.getRecentTransactionsStatement.all(discordId, type, type, limit) as CreditTransaction[];
   }
 }
 
