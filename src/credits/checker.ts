@@ -1,7 +1,7 @@
 import { BillableModel, creditsManager } from './manager';
 
 export const INSUFFICIENT_CREDITS_MESSAGE =
-  'クレジットが不足しています。/credits で残高確認、/buy でチャージできます。';
+  'クレジットが不足しています。/credits で残高確認、/subscribe でプラン変更できます。';
 
 export class InsufficientCreditsError extends Error {
   constructor() {

@@ -46,11 +46,39 @@ db.exec(`
 `);
 
 db.exec(`
+  CREATE TABLE IF NOT EXISTS subscriptions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    userId INTEGER NOT NULL UNIQUE,
+    stripeCustomerId TEXT UNIQUE,
+    stripeSubscriptionId TEXT UNIQUE,
+    plan TEXT NOT NULL CHECK(plan IN ('free', 'starter', 'pro', 'team')),
+    status TEXT NOT NULL,
+    currentPeriodStart TEXT,
+    currentPeriodEnd TEXT,
+    cancelAtPeriodEnd INTEGER NOT NULL DEFAULT 0,
+    createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (userId) REFERENCES users(id)
+  );
+`);
+
+db.exec(`
   CREATE TRIGGER IF NOT EXISTS users_set_updated_at
   AFTER UPDATE ON users
   FOR EACH ROW
   BEGIN
     UPDATE users
+    SET updatedAt = CURRENT_TIMESTAMP
+    WHERE id = NEW.id;
+  END;
+`);
+
+db.exec(`
+  CREATE TRIGGER IF NOT EXISTS subscriptions_set_updated_at
+  AFTER UPDATE ON subscriptions
+  FOR EACH ROW
+  BEGIN
+    UPDATE subscriptions
     SET updatedAt = CURRENT_TIMESTAMP
     WHERE id = NEW.id;
   END;

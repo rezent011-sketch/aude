@@ -3,6 +3,7 @@ import 'dotenv/config';
 import { loadCommands } from './handlers/commandHandler';
 import { handleInteraction } from './handlers/interactionHandler';
 import { handleMessage } from './handlers/messageHandler';
+import { startApiServer } from './server';
 
 const client = new Client({
   intents: [
@@ -34,4 +35,5 @@ client.on('messageCreate', async (message) => {
   await handleMessage(message, client);
 });
 
+startApiServer();
 client.login(process.env.DISCORD_TOKEN);

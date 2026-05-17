@@ -5,6 +5,8 @@ import { researchCommand } from '../commands/research';
 import { createCommand } from '../commands/create';
 import { codeCommand } from '../commands/code';
 import { creditsCommand } from '../commands/credits';
+import { planCommand } from '../commands/plan';
+import { subscribeCommand } from '../commands/subscribe';
 
 export interface Command {
   data: {
@@ -20,6 +22,8 @@ const commands: Command[] = [
   createCommand,
   codeCommand,
   creditsCommand,
+  subscribeCommand,
+  planCommand,
 ];
 
 export async function loadCommands(client: Client): Promise<void> {

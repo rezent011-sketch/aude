@@ -1,4 +1,10 @@
 import Stripe from 'stripe';
+import {
+  markSubscriptionDeleted,
+  stripe,
+  syncSubscriptionFromCheckoutSession,
+  syncSubscriptionFromStripeEvent,
+} from '../stripe/stripeManager';
 
 interface StripeWebhookRequest {
   headers: Record<string, string | string[] | undefined>;
@@ -10,13 +16,6 @@ interface StripeWebhookResponse {
   send(body: string): void;
   json(body: unknown): void;
 }
-
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-if (!stripeSecretKey) {
-  throw new Error('STRIPE_SECRET_KEY is not set');
-}
-
-const stripe = new Stripe(stripeSecretKey);
 
 export const stripeWebhook = async (
   req: StripeWebhookRequest,
@@ -41,9 +40,34 @@ export const stripeWebhook = async (
     return;
   }
 
-  if (event.type === 'payment_intent.succeeded') {
-    const paymentIntent = event.data.object as { amount: number };
-    console.log(`PaymentIntent for ${paymentIntent.amount} was successful!`);
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        await syncSubscriptionFromCheckoutSession(
+          event.data.object as Awaited<ReturnType<typeof stripe.checkout.sessions.create>>
+        );
+        break;
+      }
+      case 'customer.subscription.updated': {
+        await syncSubscriptionFromStripeEvent(
+          event.data.object as Awaited<ReturnType<typeof stripe.subscriptions.retrieve>>
+        );
+        break;
+      }
+      case 'customer.subscription.deleted': {
+        markSubscriptionDeleted(
+          event.data.object as Awaited<ReturnType<typeof stripe.subscriptions.retrieve>>
+        );
+        break;
+      }
+      default: {
+        console.log(`Unhandled Stripe event type: ${event.type}`);
+      }
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).send(`Webhook handler error: ${message}`);
+    return;
   }
 
   res.json({ received: true });
