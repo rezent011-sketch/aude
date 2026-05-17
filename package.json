@@ -1,0 +1,27 @@
+{
+  "name": "aude",
+  "version": "0.1.0",
+  "description": "Aude — Your AI coworker that lives in Discord",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "register": "ts-node src/register-commands.ts",
+    "lint": "eslint src/**/*.ts"
+  },
+  "keywords": ["discord", "bot", "ai", "automation"],
+  "author": "Aude AI",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^14.16.3",
+    "@anthropic-ai/sdk": "^0.39.0",
+    "openai": "^4.95.1",
+    "dotenv": "^16.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.18",
+    "typescript": "^5.8.3",
+    "ts-node": "^10.9.2"
+  }
+}

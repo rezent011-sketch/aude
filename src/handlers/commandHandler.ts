@@ -1,0 +1,59 @@
+// src/handlers/commandHandler.ts — Load and register slash commands
+import { Client, Collection, REST, Routes } from 'discord.js';
+import { taskCommand } from '../commands/task';
+import { researchCommand } from '../commands/research';
+import { createCommand } from '../commands/create';
+import { codeCommand } from '../commands/code';
+
+export interface Command {
+  data: {
+    name: string;
+    toJSON(): object;
+  };
+  execute: (interaction: any) => Promise<void>;
+}
+
+const commands: Command[] = [
+  taskCommand,
+  researchCommand,
+  createCommand,
+  codeCommand,
+];
+
+export async function loadCommands(client: Client): Promise<void> {
+  const collection = (client as any).commands as Collection<string, Command>;
+
+  for (const command of commands) {
+    collection.set(command.data.name, command);
+    console.log(`📌 Loaded command: /${command.data.name}`);
+  }
+
+  console.log(`✅ Loaded ${commands.length} commands`);
+}
+
+export async function registerCommandsToDiscord(): Promise<void> {
+  const token = process.env.DISCORD_TOKEN;
+  const clientId = process.env.DISCORD_CLIENT_ID;
+
+  if (!token || !clientId) {
+    throw new Error('DISCORD_TOKEN and DISCORD_CLIENT_ID are required');
+  }
+
+  const rest = new REST({ version: '10' }).setToken(token);
+  const commandData = commands.map((cmd) => cmd.data.toJSON());
+
+  console.log('🔄 Registering slash commands with Discord...');
+
+  if (process.env.DISCORD_GUILD_ID) {
+    // Guild-specific registration (instant, for development)
+    await rest.put(
+      Routes.applicationGuildCommands(clientId, process.env.DISCORD_GUILD_ID),
+      { body: commandData }
+    );
+    console.log(`✅ Registered ${commandData.length} commands to guild ${process.env.DISCORD_GUILD_ID}`);
+  } else {
+    // Global registration (takes up to 1 hour to propagate)
+    await rest.put(Routes.applicationCommands(clientId), { body: commandData });
+    console.log(`✅ Registered ${commandData.length} global commands`);
+  }
+}
