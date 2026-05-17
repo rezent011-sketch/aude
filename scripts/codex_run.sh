@@ -23,7 +23,7 @@ send_telegram "🚀 Aude AI 開発開始
 時刻: $(date '+%Y-%m-%d %H:%M')"
 
 # Codex実行（full-autoモード）
-codex exec --approval-policy full-auto "$PROMPT" > "$LOG_FILE" 2>&1
+echo "$PROMPT" | codex exec --dangerously-bypass-approvals-and-sandbox > "$LOG_FILE" 2>&1
 EXIT_CODE=$?
 
 # commit & push
