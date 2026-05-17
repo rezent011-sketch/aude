@@ -8,7 +8,8 @@
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
     "register": "ts-node src/register-commands.ts",
-    "lint": "eslint src/**/*.ts"
+    "lint": "eslint src/**/*.ts",
+    "test": "jest --runInBand"
   },
   "keywords": [
     "discord",
@@ -29,7 +30,10 @@
     "stripe": "^22.1.1"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/node": "^22.15.18",
+    "jest": "^30.4.2",
+    "ts-jest": "^29.4.9",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   },

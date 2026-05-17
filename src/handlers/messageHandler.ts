@@ -8,6 +8,7 @@ import {
 import { creditsManager } from '../credits/manager';
 import UserRepository from '../db/userRepository';
 import { resolveModelChoice, routeToLLM } from '../llm/router';
+import { replyToMessageWithError } from '../utils/errorHandler';
 
 export async function handleMessage(message: Message, client: Client): Promise<void> {
   if (message.author.bot) {
@@ -73,6 +74,6 @@ export async function handleMessage(message: Message, client: Client): Promise<v
       }
     }
 
-    await message.reply('❌ Something went wrong. Please try again.');
+    await replyToMessageWithError(message, error);
   }
 }
