@@ -19,15 +19,17 @@
   "author": "Aude AI",
   "license": "MIT",
   "dependencies": {
-    "discord.js": "^14.16.3",
     "@anthropic-ai/sdk": "^0.39.0",
-    "openai": "^4.95.1",
-    "dotenv": "^16.5.0"
+    "@types/better-sqlite3": "^7.6.13",
+    "better-sqlite3": "^12.10.0",
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.5.0",
+    "openai": "^4.95.1"
   },
   "devDependencies": {
     "@types/node": "^22.15.18",
-    "typescript": "^5.8.3",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
   },
   "repository": {
     "type": "git",
