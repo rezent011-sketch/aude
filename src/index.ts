@@ -4,6 +4,7 @@ import { loadCommands } from './handlers/commandHandler';
 import { handleInteraction } from './handlers/interactionHandler';
 import { handleMessage } from './handlers/messageHandler';
 import { startApiServer } from './server';
+import approvalService from './services/approvalService';
 import scheduleService from './services/scheduleService';
 
 const client = new Client({
@@ -23,6 +24,7 @@ client.once('ready', async () => {
   console.log(`✅ Logged in as ${client.user?.tag}`);
   // Load commands into the in-memory collection
   await loadCommands(client);
+  await approvalService.initialize(client);
   await scheduleService.initialize(client);
 });
 

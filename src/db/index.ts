@@ -79,6 +79,32 @@ db.exec(`
 `);
 
 db.exec(`
+  CREATE TABLE IF NOT EXISTS approvals (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    requester_discord_id TEXT NOT NULL,
+    requester_username TEXT NOT NULL,
+    requester_plan TEXT NOT NULL CHECK(requester_plan IN ('free', 'starter', 'pro', 'team')),
+    guild_id TEXT NOT NULL,
+    channel_id TEXT NOT NULL,
+    message_id TEXT,
+    task_description TEXT NOT NULL,
+    model TEXT NOT NULL CHECK(model IN ('auto', 'claude', 'gpt4o')),
+    status TEXT NOT NULL CHECK(status IN ('pending', 'running', 'rejected', 'timed_out', 'completed', 'failed')),
+    approver_discord_id TEXT,
+    approver_username TEXT,
+    decided_at TEXT,
+    expires_at TEXT NOT NULL,
+    started_at TEXT,
+    completed_at TEXT,
+    result_summary TEXT,
+    error_message TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
+`);
+
+db.exec(`
   CREATE TRIGGER IF NOT EXISTS users_set_updated_at
   AFTER UPDATE ON users
   FOR EACH ROW

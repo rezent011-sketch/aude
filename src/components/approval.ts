@@ -1,130 +1,168 @@
-// src/components/approval.ts -- Approval flow with ✅Approve / ❌Reject buttons
 import {
+  ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  ActionRowBuilder,
-  ButtonInteraction,
-  ComponentType,
-  ChatInputCommandInteraction,
   EmbedBuilder,
-  Message,
-  InteractionCollector,
 } from 'discord.js';
+import { ApprovalRecord } from '../db/approvalRepository';
 
-export interface ApprovalOptions {
-  /** Title shown in the approval embed */
-  title: string;
-  /** Description / details of the action to approve */
-  description: string;
-  /** Timeout in milliseconds (default: 30 000) */
-  timeoutMs?: number;
+export const APPROVAL_TIMEOUT_MS = 10 * 60 * 1000;
+
+const APPROVAL_CUSTOM_ID_PREFIX = 'approval';
+const DISPLAY_TIME_ZONE = process.env.SCHEDULE_TIMEZONE ?? 'Asia/Tokyo';
+
+export type ApprovalAction = 'approve' | 'reject';
+
+function formatApprovalDate(value: string): string {
+  return new Date(value).toLocaleString('ja-JP', {
+    hour12: false,
+    timeZone: DISPLAY_TIME_ZONE,
+  });
 }
 
-export interface ApprovalResult {
-  approved: boolean;
-  /** The ButtonInteraction that resolved the flow, or null on timeout */
-  interaction: ButtonInteraction | null;
+function getApprovalPolicyLabel(record: ApprovalRecord): string {
+  return record.requesterPlan === 'team'
+    ? 'Team プラン: サーバー内の全員が承認可能'
+    : 'Free/Starter/Pro: 管理者のみ承認可能';
 }
 
-/**
- * Show an approval prompt with ✅Approve / ❌Reject buttons.
- * Resolves when the user clicks a button, or after timeout.
- *
- * @param interaction - The originating slash-command interaction (must be deferred or replied).
- * @param options     - Approval display options.
- * @returns           - { approved, interaction }
- */
-export async function requestApproval(
-  interaction: ChatInputCommandInteraction,
-  options: ApprovalOptions
-): Promise<ApprovalResult> {
-  const { title, description, timeoutMs = 30_000 } = options;
+function buildApprovalCustomId(action: ApprovalAction, approvalId: number): string {
+  return `${APPROVAL_CUSTOM_ID_PREFIX}:${action}:${approvalId}`;
+}
 
-  // Build embed
-  const embed = new EmbedBuilder()
-    .setColor(0xffa500)
-    .setTitle(`⚠️ Approval Required: ${title}`)
-    .setDescription(description)
-    .setFooter({ text: `This request will expire in ${Math.round(timeoutMs / 1000)} seconds.` })
-    .setTimestamp();
+export function parseApprovalCustomId(
+  customId: string
+): { action: ApprovalAction; approvalId: number } | null {
+  const [prefix, action, approvalIdText] = customId.split(':');
 
-  // Build buttons
-  const approveButton = new ButtonBuilder()
-    .setCustomId('approval_approve')
-    .setLabel('✅ Approve')
-    .setStyle(ButtonStyle.Success);
-
-  const rejectButton = new ButtonBuilder()
-    .setCustomId('approval_reject')
-    .setLabel('❌ Reject')
-    .setStyle(ButtonStyle.Danger);
-
-  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(approveButton, rejectButton);
-
-  // Send the approval message
-  let approvalMessage: Message;
-  if (interaction.replied || interaction.deferred) {
-    approvalMessage = (await interaction.followUp({
-      embeds: [embed],
-      components: [row],
-    })) as Message;
-  } else {
-    approvalMessage = (await interaction.reply({
-      embeds: [embed],
-      components: [row],
-      fetchReply: true,
-    })) as Message;
+  if (
+    prefix !== APPROVAL_CUSTOM_ID_PREFIX ||
+    (action !== 'approve' && action !== 'reject') ||
+    !approvalIdText
+  ) {
+    return null;
   }
 
-  return new Promise<ApprovalResult>((resolve) => {
-    const collector: InteractionCollector<ButtonInteraction> =
-      approvalMessage.createMessageComponentCollector({
-        componentType: ComponentType.Button,
-        filter: (btn) => btn.user.id === interaction.user.id,
-        time: timeoutMs,
-        max: 1,
-      });
+  const approvalId = Number(approvalIdText);
+  if (!Number.isInteger(approvalId) || approvalId <= 0) {
+    return null;
+  }
 
-    collector.on('collect', async (btn: ButtonInteraction) => {
-      const approved = btn.customId === 'approval_approve';
+  return { action, approvalId };
+}
 
-      // Acknowledge button click
-      const resultEmbed = new EmbedBuilder()
-        .setColor(approved ? 0x57f287 : 0xed4245)
-        .setTitle(approved ? '✅ Approved' : '❌ Rejected')
-        .setDescription(
-          approved
-            ? 'Action approved — processing your request...'
-            : 'Action rejected — no changes were made.'
-        )
-        .setTimestamp();
+export function buildApprovalButtons(
+  approvalId: number,
+  disabled = false
+): ActionRowBuilder<ButtonBuilder> {
+  return new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId(buildApprovalCustomId('approve', approvalId))
+      .setLabel('✅承認')
+      .setStyle(ButtonStyle.Success)
+      .setDisabled(disabled),
+    new ButtonBuilder()
+      .setCustomId(buildApprovalCustomId('reject', approvalId))
+      .setLabel('❌拒否')
+      .setStyle(ButtonStyle.Danger)
+      .setDisabled(disabled)
+  );
+}
 
-      await btn.update({ embeds: [resultEmbed], components: [] });
-      resolve({ approved, interaction: btn });
-    });
+export function buildPendingApprovalEmbed(record: ApprovalRecord): EmbedBuilder {
+  return new EmbedBuilder()
+    .setColor(0xf1c40f)
+    .setTitle(`承認待ちタスク #${record.id}`)
+    .setDescription(record.taskDescription)
+    .addFields(
+      { name: '依頼者', value: `<@${record.requesterDiscordId}>`, inline: true },
+      { name: 'モデル', value: record.model, inline: true },
+      { name: '承認ルール', value: getApprovalPolicyLabel(record), inline: false },
+      { name: 'タイムアウト', value: formatApprovalDate(record.expiresAt), inline: false }
+    )
+    .setFooter({ text: 'ボタンで承認または拒否してください。10分で自動キャンセルされます。' })
+    .setTimestamp(new Date(record.createdAt));
+}
 
-    collector.on('end', (collected) => {
-      if (collected.size === 0) {
-        // Timed out — disable buttons
-        const disabledApprove = ButtonBuilder.from(approveButton).setDisabled(true);
-        const disabledReject = ButtonBuilder.from(rejectButton).setDisabled(true);
-        const disabledRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
-          disabledApprove,
-          disabledReject
-        );
+export function buildRunningApprovalEmbed(record: ApprovalRecord): EmbedBuilder {
+  return new EmbedBuilder()
+    .setColor(0x3498db)
+    .setTitle(`実行中タスク #${record.id}`)
+    .setDescription(record.taskDescription)
+    .addFields(
+      { name: '依頼者', value: `<@${record.requesterDiscordId}>`, inline: true },
+      {
+        name: '承認者',
+        value: record.approverDiscordId ? `<@${record.approverDiscordId}>` : '不明',
+        inline: true,
+      },
+      { name: 'モデル', value: record.model, inline: true }
+    )
+    .setFooter({ text: '承認済みです。タスクを実行しています。' })
+    .setTimestamp(new Date(record.startedAt ?? record.createdAt));
+}
 
-        const timeoutEmbed = new EmbedBuilder()
-          .setColor(0x747f8d)
-          .setTitle('⏰ Approval Timed Out')
-          .setDescription('No response received within the time limit. The action was cancelled.')
-          .setTimestamp();
-
-        approvalMessage
-          .edit({ embeds: [timeoutEmbed], components: [disabledRow] })
-          .catch(() => {/* ignore if message was deleted */});
-
-        resolve({ approved: false, interaction: null });
+export function buildRejectedApprovalEmbed(record: ApprovalRecord): EmbedBuilder {
+  return new EmbedBuilder()
+    .setColor(0xe74c3c)
+    .setTitle(`拒否されたタスク #${record.id}`)
+    .setDescription(record.taskDescription)
+    .addFields(
+      { name: '依頼者', value: `<@${record.requesterDiscordId}>`, inline: true },
+      {
+        name: '対応者',
+        value: record.approverDiscordId ? `<@${record.approverDiscordId}>` : '不明',
+        inline: true,
       }
-    });
-  });
+    )
+    .setFooter({ text: 'このタスクは実行されませんでした。' })
+    .setTimestamp(new Date(record.decidedAt ?? record.createdAt));
+}
+
+export function buildTimedOutApprovalEmbed(record: ApprovalRecord): EmbedBuilder {
+  return new EmbedBuilder()
+    .setColor(0x95a5a6)
+    .setTitle(`タイムアウトしたタスク #${record.id}`)
+    .setDescription(record.taskDescription)
+    .addFields(
+      { name: '依頼者', value: `<@${record.requesterDiscordId}>`, inline: true },
+      { name: '失効時刻', value: formatApprovalDate(record.expiresAt), inline: true }
+    )
+    .setFooter({ text: '10分以内に承認されなかったため自動キャンセルされました。' })
+    .setTimestamp(new Date(record.expiresAt));
+}
+
+export function buildCompletedApprovalEmbed(record: ApprovalRecord): EmbedBuilder {
+  return new EmbedBuilder()
+    .setColor(0x2ecc71)
+    .setTitle(`完了タスク #${record.id}`)
+    .setDescription(record.taskDescription)
+    .addFields(
+      { name: '依頼者', value: `<@${record.requesterDiscordId}>`, inline: true },
+      {
+        name: '承認者',
+        value: record.approverDiscordId ? `<@${record.approverDiscordId}>` : '不明',
+        inline: true,
+      }
+    )
+    .setFooter({ text: '承認されたタスクの実行が完了しました。' })
+    .setTimestamp(new Date(record.completedAt ?? record.startedAt ?? record.createdAt));
+}
+
+export function buildFailedApprovalEmbed(record: ApprovalRecord): EmbedBuilder {
+  return new EmbedBuilder()
+    .setColor(0xe67e22)
+    .setTitle(`失敗したタスク #${record.id}`)
+    .setDescription(record.taskDescription)
+    .addFields(
+      { name: '依頼者', value: `<@${record.requesterDiscordId}>`, inline: true },
+      {
+        name: '承認者',
+        value: record.approverDiscordId ? `<@${record.approverDiscordId}>` : '不明',
+        inline: true,
+      },
+      { name: 'エラー', value: record.errorMessage ?? '不明なエラー', inline: false }
+    )
+    .setFooter({ text: 'タスク実行中にエラーが発生しました。' })
+    .setTimestamp(new Date(record.completedAt ?? record.startedAt ?? record.createdAt));
 }

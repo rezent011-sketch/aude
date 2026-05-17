@@ -1,6 +1,7 @@
 // src/handlers/commandHandler.ts — Load and register slash commands
 import { Client, Collection, REST, Routes } from 'discord.js';
 import { taskCommand } from '../commands/task';
+import { approveTaskCommand } from '../commands/approveTask';
 import { researchCommand } from '../commands/research';
 import { createCommand } from '../commands/create';
 import { codeCommand } from '../commands/code';
@@ -13,6 +14,7 @@ import { scheduleCommand } from '../commands/schedule';
 import { notionCommand } from '../commands/notion';
 import { googleCommand } from '../commands/google';
 import { githubCommand } from '../commands/github';
+import { pendingCommand } from '../commands/pending';
 
 export interface Command {
   data: {
@@ -24,6 +26,8 @@ export interface Command {
 
 const commands: Command[] = [
   taskCommand,
+  approveTaskCommand,
+  pendingCommand,
   researchCommand,
   createCommand,
   codeCommand,
