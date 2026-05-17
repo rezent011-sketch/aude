@@ -76,7 +76,9 @@ Write it in full, ready to use. Format appropriately for the content type.`;
     } catch (error) {
       console.error('Error in /create command:', error);
       await interaction.editReply(
-        'Failed to create content. Please check your API keys and try again.'
+        error instanceof Error && error.message
+          ? error.message
+          : 'コンテンツ生成に失敗しました。設定と入力内容を確認してください。'
       );
     }
   },

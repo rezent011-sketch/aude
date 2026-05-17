@@ -70,7 +70,9 @@ Structure your response with clear headers and bullet points. Include specific f
     } catch (error) {
       console.error('Error in /research command:', error);
       await interaction.editReply(
-        'Failed to complete research. Please check your API keys and try again.'
+        error instanceof Error && error.message
+          ? error.message
+          : 'リサーチの実行に失敗しました。設定と入力内容を確認してください。'
       );
     }
   },

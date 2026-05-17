@@ -57,7 +57,9 @@ export const codeCommand = {
     } catch (error) {
       console.error('Error in /code command:', error);
       await interaction.editReply(
-        'Failed to generate code. Please check your API keys and try again.'
+        error instanceof Error && error.message
+          ? error.message
+          : 'コード生成に失敗しました。設定と入力内容を確認してください。'
       );
     }
   },

@@ -31,7 +31,7 @@ export async function handleMessage(message: Message, client: Client): Promise<v
   const username = message.author.username;
   const channelId = message.channel.id;
   const user = UserRepository.getOrCreateUser(discordId, username);
-  const selectedModel = resolveModelChoice(prompt, 'auto');
+  const selectedModel = resolveModelChoice(prompt, 'auto', channelId);
 
   console.log(
     `[MSG] channelId=${channelId} discordId=${discordId} model=${selectedModel}`
@@ -52,7 +52,7 @@ export async function handleMessage(message: Message, client: Client): Promise<v
     creditsManager.consume(discordId, username, selectedModel);
     creditsCharged = true;
 
-    const result = await routeToLLM(prompt, selectedModel, messages);
+    const result = await routeToLLM(prompt, selectedModel, messages, channelId);
 
     await conversationHistory.append(channelId, user.id, 'user', prompt);
     await conversationHistory.append(channelId, user.id, 'assistant', result);

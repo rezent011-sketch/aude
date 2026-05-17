@@ -105,6 +105,17 @@ db.exec(`
 `);
 
 db.exec(`
+  CREATE TABLE IF NOT EXISTS model_preferences (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    channel_id TEXT NOT NULL UNIQUE,
+    model TEXT NOT NULL CHECK(model IN ('auto', 'claude', 'gpt4o')),
+    updated_by_discord_id TEXT NOT NULL,
+    updated_by_username TEXT NOT NULL,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
+`);
+
+db.exec(`
   CREATE TRIGGER IF NOT EXISTS users_set_updated_at
   AFTER UPDATE ON users
   FOR EACH ROW
@@ -122,6 +133,17 @@ db.exec(`
   BEGIN
     UPDATE subscriptions
     SET updatedAt = CURRENT_TIMESTAMP
+    WHERE id = NEW.id;
+  END;
+`);
+
+db.exec(`
+  CREATE TRIGGER IF NOT EXISTS model_preferences_set_updated_at
+  AFTER UPDATE ON model_preferences
+  FOR EACH ROW
+  BEGIN
+    UPDATE model_preferences
+    SET updated_at = CURRENT_TIMESTAMP
     WHERE id = NEW.id;
   END;
 `);

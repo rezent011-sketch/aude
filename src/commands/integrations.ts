@@ -3,12 +3,27 @@ import {
   MessageFlags,
   SlashCommandBuilder,
 } from 'discord.js';
+import { getAiStatus, setChannelAiModel } from '../integrations/ai';
+import {
+  createCanvaDesign,
+  listCanvaDesigns,
+} from '../integrations/canva';
 import {
   readGmailMessage,
   searchGmailMessages,
   sendGmailMessage,
 } from '../integrations/gmail';
 import { getErrorMessage } from '../integrations/errors';
+import {
+  exportFigmaNodes,
+  getFigmaFile,
+  listFigmaComments,
+} from '../integrations/figma';
+import {
+  getFirefliesTranscriptSummary,
+  listFirefliesTranscripts,
+  searchFirefliesTranscripts,
+} from '../integrations/fireflies';
 import {
   createSheet,
   readSheet,
@@ -29,6 +44,7 @@ import {
   listVercelDeployments,
   listVercelProjects,
 } from '../integrations/vercel';
+import { ModelChoice, getModelLabel, resolveModelChoice } from '../llm/router';
 import { splitMessage, truncate } from '../utils/discord';
 
 const MAX_EMAIL_FIELD_LENGTH = 200;
@@ -44,6 +60,9 @@ const MAX_MIME_TYPE_LENGTH = 120;
 const MAX_IDENTIFIER_LENGTH = 200;
 const MAX_PHONE_LENGTH = 50;
 const MAX_COMPANY_LENGTH = 200;
+const MAX_FILE_KEY_LENGTH = 200;
+const MAX_TRANSCRIPT_ID_LENGTH = 200;
+const MAX_NODE_IDS_LENGTH = 1000;
 
 type Command = {
   data: {
@@ -744,6 +763,508 @@ export const vercelCommand: Command = {
       );
     } catch (error) {
       await handleIntegrationError(interaction, error, 'Vercel連携の処理中にエラーが発生しました。');
+    }
+  },
+};
+
+export const firefliesCommand: Command = {
+  data: new SlashCommandBuilder()
+    .setName('fireflies')
+    .setDescription('Fireflies transcripts を検索・要約します')
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName('transcripts')
+        .setDescription('最近の transcript 一覧を表示します')
+        .addIntegerOption((option) =>
+          option
+            .setName('limit')
+            .setDescription('取得件数')
+            .setRequired(false)
+            .setMinValue(1)
+            .setMaxValue(10)
+        )
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName('search')
+        .setDescription('Fireflies transcript を検索します')
+        .addStringOption((option) =>
+          option
+            .setName('query')
+            .setDescription('検索キーワード')
+            .setRequired(true)
+            .setMaxLength(MAX_QUERY_LENGTH)
+        )
+        .addIntegerOption((option) =>
+          option
+            .setName('limit')
+            .setDescription('取得件数')
+            .setRequired(false)
+            .setMinValue(1)
+            .setMaxValue(10)
+        )
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName('summary')
+        .setDescription('transcript id を指定して summary を表示します')
+        .addStringOption((option) =>
+          option
+            .setName('transcript_id')
+            .setDescription('Fireflies transcript id')
+            .setRequired(true)
+            .setMaxLength(MAX_TRANSCRIPT_ID_LENGTH)
+        )
+    ),
+
+  async execute(interaction: ChatInputCommandInteraction): Promise<void> {
+    try {
+      const subcommand = interaction.options.getSubcommand();
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+      if (subcommand === 'transcripts') {
+        const limit = interaction.options.getInteger('limit') ?? 5;
+        const transcripts = await listFirefliesTranscripts(limit);
+
+        if (transcripts.length === 0) {
+          await interaction.editReply('表示できる Fireflies transcript はありません。');
+          return;
+        }
+
+        await replyWithParts(
+          interaction,
+          [
+            `Fireflies transcripts: ${transcripts.length}件`,
+            ...transcripts.map((item, index) =>
+              [
+                `${index + 1}. ${truncate(item.title, 120)}`,
+                `ID: ${item.id}`,
+                `Date: ${item.date ?? '不明'}`,
+                `Organizer: ${item.organizerEmail ?? '不明'}`,
+                truncate(item.shortSummary ?? item.shortOverview ?? 'summary なし', 200),
+                item.transcriptUrl ?? 'URLなし',
+              ].join('\n')
+            ),
+          ].join('\n\n')
+        );
+        return;
+      }
+
+      if (subcommand === 'search') {
+        const query = interaction.options.getString('query', true).trim();
+        const limit = interaction.options.getInteger('limit') ?? 5;
+        const transcripts = await searchFirefliesTranscripts(query, limit);
+
+        if (transcripts.length === 0) {
+          await interaction.editReply('条件に一致する Fireflies transcript は見つかりませんでした。');
+          return;
+        }
+
+        await replyWithParts(
+          interaction,
+          [
+            `Fireflies search: ${transcripts.length}件`,
+            ...transcripts.map((item, index) =>
+              [
+                `${index + 1}. ${truncate(item.title, 120)}`,
+                `ID: ${item.id}`,
+                `Date: ${item.date ?? '不明'}`,
+                truncate(item.shortSummary ?? item.shortOverview ?? 'summary なし', 240),
+                item.transcriptUrl ?? 'URLなし',
+              ].join('\n')
+            ),
+          ].join('\n\n')
+        );
+        return;
+      }
+
+      const transcriptId = interaction.options.getString('transcript_id', true).trim();
+      const summary = await getFirefliesTranscriptSummary(transcriptId);
+
+      await replyWithParts(
+        interaction,
+        [
+          `Title: ${summary.title}`,
+          `ID: ${summary.id}`,
+          `Date: ${summary.date ?? '不明'}`,
+          `Participants: ${summary.participants.length > 0 ? summary.participants.join(', ') : 'なし'}`,
+          `Duration: ${summary.durationInSeconds ?? '不明'} 秒`,
+          `Summary: ${summary.shortSummary ?? 'なし'}`,
+          `Overview: ${summary.shortOverview ?? 'なし'}`,
+          `Action Items: ${summary.actionItems.length > 0 ? summary.actionItems.join(' / ') : 'なし'}`,
+          `Keywords: ${summary.keywords.length > 0 ? summary.keywords.join(', ') : 'なし'}`,
+          summary.transcriptUrl ?? 'Transcript URLなし',
+        ].join('\n')
+      );
+    } catch (error) {
+      await handleIntegrationError(
+        interaction,
+        error,
+        'Fireflies連携の処理中にエラーが発生しました。'
+      );
+    }
+  },
+};
+
+export const canvaCommand: Command = {
+  data: new SlashCommandBuilder()
+    .setName('canva')
+    .setDescription('Canva design を一覧・作成します')
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName('designs')
+        .setDescription('Canva design 一覧を表示します')
+        .addStringOption((option) =>
+          option
+            .setName('query')
+            .setDescription('design 名で絞り込みます')
+            .setRequired(false)
+            .setMaxLength(MAX_QUERY_LENGTH)
+        )
+        .addIntegerOption((option) =>
+          option
+            .setName('limit')
+            .setDescription('取得件数')
+            .setRequired(false)
+            .setMinValue(1)
+            .setMaxValue(20)
+        )
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName('create')
+        .setDescription('Canva design を新規作成します')
+        .addStringOption((option) =>
+          option
+            .setName('title')
+            .setDescription('design のタイトル')
+            .setRequired(true)
+            .setMaxLength(MAX_TITLE_LENGTH)
+        )
+        .addStringOption((option) =>
+          option
+            .setName('preset')
+            .setDescription('Canva preset。custom の場合は width/height を指定')
+            .setRequired(true)
+            .addChoices(
+              { name: 'Doc', value: 'doc' },
+              { name: 'Presentation', value: 'presentation' },
+              { name: 'Whiteboard', value: 'whiteboard' },
+              { name: 'Email', value: 'email' },
+              { name: 'Custom', value: 'custom' }
+            )
+        )
+        .addIntegerOption((option) =>
+          option
+            .setName('width')
+            .setDescription('custom 用 width')
+            .setRequired(false)
+            .setMinValue(40)
+            .setMaxValue(8000)
+        )
+        .addIntegerOption((option) =>
+          option
+            .setName('height')
+            .setDescription('custom 用 height')
+            .setRequired(false)
+            .setMinValue(40)
+            .setMaxValue(8000)
+        )
+    ),
+
+  async execute(interaction: ChatInputCommandInteraction): Promise<void> {
+    try {
+      const subcommand = interaction.options.getSubcommand();
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+      if (subcommand === 'designs') {
+        const query = interaction.options.getString('query')?.trim();
+        const limit = interaction.options.getInteger('limit') ?? 10;
+        const result = await listCanvaDesigns(query, limit);
+
+        if (result.items.length === 0) {
+          await interaction.editReply('表示できる Canva design はありません。');
+          return;
+        }
+
+        await replyWithParts(
+          interaction,
+          [
+            `Canva designs: ${result.items.length}件`,
+            ...result.items.map((design, index) =>
+              [
+                `${index + 1}. ${truncate(design.title, 120)}`,
+                `ID: ${design.id}`,
+                `Updated: ${design.updatedAt}`,
+                `Pages: ${design.pageCount ?? '不明'}`,
+                design.editUrl ?? design.viewUrl ?? 'URLなし',
+              ].join('\n')
+            ),
+            result.continuation ? `Continuation: ${result.continuation}` : '',
+          ]
+            .filter(Boolean)
+            .join('\n\n')
+        );
+        return;
+      }
+
+      const title = interaction.options.getString('title', true).trim();
+      const preset = interaction.options.getString('preset', true);
+
+      const design =
+        preset === 'custom'
+          ? await createCanvaDesign({
+              title,
+              width:
+                interaction.options.getInteger('width') ??
+                (() => {
+                  throw new Error('custom design では `width` を指定してください。');
+                })(),
+              height:
+                interaction.options.getInteger('height') ??
+                (() => {
+                  throw new Error('custom design では `height` を指定してください。');
+                })(),
+            })
+          : await createCanvaDesign({
+              title,
+              preset: preset as 'doc' | 'presentation' | 'whiteboard' | 'email',
+            });
+
+      await interaction.editReply(
+        [
+          'Canva design を作成しました。',
+          `ID: ${design.id}`,
+          `Title: ${design.title}`,
+          `Updated: ${design.updatedAt}`,
+          design.editUrl ?? design.viewUrl ?? 'URLなし',
+        ].join('\n')
+      );
+    } catch (error) {
+      await handleIntegrationError(interaction, error, 'Canva連携の処理中にエラーが発生しました。');
+    }
+  },
+};
+
+export const figmaCommand: Command = {
+  data: new SlashCommandBuilder()
+    .setName('figma')
+    .setDescription('Figma file 情報を取得します')
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName('files')
+        .setDescription('Figma file 情報を表示します')
+        .addStringOption((option) =>
+          option
+            .setName('file_key')
+            .setDescription('Figma file key')
+            .setRequired(true)
+            .setMaxLength(MAX_FILE_KEY_LENGTH)
+        )
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName('comments')
+        .setDescription('Figma comments を取得します')
+        .addStringOption((option) =>
+          option
+            .setName('file_key')
+            .setDescription('Figma file key')
+            .setRequired(true)
+            .setMaxLength(MAX_FILE_KEY_LENGTH)
+        )
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName('export')
+        .setDescription('Figma node を export します')
+        .addStringOption((option) =>
+          option
+            .setName('file_key')
+            .setDescription('Figma file key')
+            .setRequired(true)
+            .setMaxLength(MAX_FILE_KEY_LENGTH)
+        )
+        .addStringOption((option) =>
+          option
+            .setName('node_ids')
+            .setDescription('カンマ区切りの node id。一例: 1:2,3:4')
+            .setRequired(true)
+            .setMaxLength(MAX_NODE_IDS_LENGTH)
+        )
+        .addStringOption((option) =>
+          option
+            .setName('format')
+            .setDescription('export format')
+            .setRequired(true)
+            .addChoices(
+              { name: 'PNG', value: 'png' },
+              { name: 'JPG', value: 'jpg' },
+              { name: 'SVG', value: 'svg' },
+              { name: 'PDF', value: 'pdf' }
+            )
+        )
+        .addNumberOption((option) =>
+          option
+            .setName('scale')
+            .setDescription('png/jpg/svg 用 scale')
+            .setRequired(false)
+            .setMinValue(0.01)
+            .setMaxValue(4)
+        )
+    ),
+
+  async execute(interaction: ChatInputCommandInteraction): Promise<void> {
+    try {
+      const subcommand = interaction.options.getSubcommand();
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+      if (subcommand === 'files') {
+        const fileKey = interaction.options.getString('file_key', true).trim();
+        const file = await getFigmaFile(fileKey);
+
+        await interaction.editReply(
+          [
+            `Name: ${file.name}`,
+            `Key: ${file.key}`,
+            `Role: ${file.role ?? '不明'}`,
+            `Last Modified: ${file.lastModified ?? '不明'}`,
+            `Version: ${file.version ?? '不明'}`,
+            `Pages: ${file.pageNames.length > 0 ? file.pageNames.join(', ') : 'なし'}`,
+            file.thumbnailUrl ?? 'Thumbnail URLなし',
+          ].join('\n')
+        );
+        return;
+      }
+
+      if (subcommand === 'comments') {
+        const fileKey = interaction.options.getString('file_key', true).trim();
+        const comments = await listFigmaComments(fileKey);
+
+        if (comments.length === 0) {
+          await interaction.editReply('表示できる Figma comment はありません。');
+          return;
+        }
+
+        await replyWithParts(
+          interaction,
+          [
+            `Figma comments: ${comments.length}件`,
+            ...comments.map((comment, index) =>
+              [
+                `${index + 1}. ${truncate(comment.message, 180)}`,
+                `ID: ${comment.id}`,
+                `Author: ${comment.author ?? '不明'}`,
+                `Created: ${comment.createdAt ?? '不明'}`,
+                `Resolved: ${comment.resolvedAt ?? '未解決'}`,
+              ].join('\n')
+            ),
+          ].join('\n\n')
+        );
+        return;
+      }
+
+      const fileKey = interaction.options.getString('file_key', true).trim();
+      const format = interaction.options.getString('format', true) as 'png' | 'jpg' | 'svg' | 'pdf';
+      const scale = interaction.options.getNumber('scale') ?? undefined;
+      const nodeIds = interaction.options
+        .getString('node_ids', true)
+        .split(',')
+        .map((value) => value.trim())
+        .filter(Boolean);
+
+      const result = await exportFigmaNodes(fileKey, nodeIds, format, scale);
+
+      await replyWithParts(
+        interaction,
+        [
+          `Figma export: ${result.images.length}件`,
+          `File Key: ${result.fileKey}`,
+          `Format: ${result.format}`,
+          ...result.images.map((image, index) =>
+            [`${index + 1}. Node: ${image.nodeId}`, image.url ?? 'URLなし'].join('\n')
+          ),
+        ].join('\n\n')
+      );
+    } catch (error) {
+      await handleIntegrationError(interaction, error, 'Figma連携の処理中にエラーが発生しました。');
+    }
+  },
+};
+
+export const aiCommand: Command = {
+  data: new SlashCommandBuilder()
+    .setName('ai')
+    .setDescription('チャンネルごとの既定 LLM を確認・切替します')
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName('switch')
+        .setDescription('このチャンネルの既定 LLM を切り替えます')
+        .addStringOption((option) =>
+          option
+            .setName('model')
+            .setDescription('使用する既定モデル')
+            .setRequired(true)
+            .addChoices(
+              { name: 'Auto', value: 'auto' },
+              { name: 'Claude', value: 'claude' },
+              { name: 'GPT-4o', value: 'gpt4o' }
+            )
+        )
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName('status')
+        .setDescription('このチャンネルの既定 LLM 状態を表示します')
+    ),
+
+  async execute(interaction: ChatInputCommandInteraction): Promise<void> {
+    try {
+      const channelId = interaction.channelId;
+
+      if (!channelId) {
+        throw new Error('チャンネル情報を取得できませんでした。');
+      }
+
+      const subcommand = interaction.options.getSubcommand();
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+      if (subcommand === 'switch') {
+        const model = interaction.options.getString('model', true) as ModelChoice;
+        const status = setChannelAiModel(channelId, model, interaction.user.id, interaction.user.username);
+        const effectiveModel = resolveModelChoice('general question', status.configuredModel, channelId);
+
+        await interaction.editReply(
+          [
+            '既定 LLM を更新しました。',
+            `Configured: ${status.configuredModel}`,
+            `Effective: ${getModelLabel(effectiveModel)}`,
+            `Updated By: ${status.updatedBy ?? interaction.user.username}`,
+            `OpenAI API: ${status.openaiConfigured ? '設定済み' : '未設定'}`,
+            `Anthropic API: ${status.anthropicConfigured ? '設定済み' : '未設定'}`,
+          ].join('\n')
+        );
+        return;
+      }
+
+      const status = getAiStatus(channelId, resolveModelChoice('general question', 'auto', channelId));
+
+      await interaction.editReply(
+        [
+          `Configured: ${status.configuredModel}`,
+          `Effective: ${getModelLabel(status.effectiveModel)}`,
+          `Updated By: ${status.updatedBy ?? '未設定'}`,
+          `Updated At: ${status.updatedAt ?? '未設定'}`,
+          `OpenAI API: ${status.openaiConfigured ? '設定済み' : '未設定'}`,
+          `Anthropic API: ${status.anthropicConfigured ? '設定済み' : '未設定'}`,
+        ].join('\n')
+      );
+    } catch (error) {
+      await handleIntegrationError(
+        interaction,
+        error,
+        'AIモデル切替の処理中にエラーが発生しました。'
+      );
     }
   },
 };

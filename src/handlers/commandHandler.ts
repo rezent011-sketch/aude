@@ -16,7 +16,11 @@ import { googleCommand } from '../commands/google';
 import { githubCommand } from '../commands/github';
 import { pendingCommand } from '../commands/pending';
 import {
+  aiCommand,
+  canvaCommand,
   driveCommand,
+  figmaCommand,
+  firefliesCommand,
   gmailCommand,
   hubspotCommand,
   sheetsCommand,
@@ -52,6 +56,10 @@ const commands: Command[] = [
   driveCommand,
   hubspotCommand,
   vercelCommand,
+  firefliesCommand,
+  canvaCommand,
+  figmaCommand,
+  aiCommand,
 ];
 
 export async function loadCommands(client: Client): Promise<void> {

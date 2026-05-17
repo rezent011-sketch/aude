@@ -237,7 +237,12 @@ class ApprovalService {
     let result: string;
 
     try {
-      result = await routeToLLM(buildTaskPrompt(approval.taskDescription), approval.model);
+      result = await routeToLLM(
+        buildTaskPrompt(approval.taskDescription),
+        approval.model,
+        undefined,
+        approval.channelId
+      );
     } catch (error) {
       console.error(`Error executing approved task #${approval.id}:`, error);
 

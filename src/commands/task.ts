@@ -43,7 +43,7 @@ export const taskCommand = {
 Please complete this task thoroughly and return the results.`;
 
     try {
-      const result = await routeToLLM(prompt, model);
+      const result = await routeToLLM(prompt, model, undefined, interaction.channelId);
       const elapsed = formatElapsed(startTime);
       const parts = splitMessage(result);
 
@@ -63,7 +63,9 @@ Please complete this task thoroughly and return the results.`;
     } catch (error) {
       console.error('Error in /task command:', error);
       await interaction.editReply(
-        'Failed to complete the task. Please check your API keys and try again.'
+        error instanceof Error && error.message
+          ? error.message
+          : 'タスクの実行に失敗しました。設定と入力内容を確認してください。'
       );
     }
   },

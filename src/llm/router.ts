@@ -1,6 +1,7 @@
 // src/llm/router.ts -- LLM routing between Claude and GPT-4o
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
+import ModelPreferenceRepository from '../db/modelPreferenceRepository';
 
 export type ModelChoice = 'claude' | 'gpt4o' | 'auto';
 export type RoutedModel = Exclude<ModelChoice, 'auto'>;
@@ -17,7 +18,9 @@ function getAnthropicClient(): Anthropic {
   if (!anthropicClient) {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
-      throw new Error('ANTHROPIC_API_KEY is not set');
+      throw new Error(
+        'Claude連携を使うには環境変数 `ANTHROPIC_API_KEY` を設定してください。'
+      );
     }
     anthropicClient = new Anthropic({ apiKey });
   }
@@ -28,19 +31,34 @@ function getOpenAIClient(): OpenAI {
   if (!openaiClient) {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      throw new Error('OPENAI_API_KEY is not set');
+      throw new Error(
+        'OpenAI連携を使うには環境変数 `OPENAI_API_KEY` を設定してください。'
+      );
     }
     openaiClient = new OpenAI({ apiKey });
   }
   return openaiClient;
 }
 
+export function getModelLabel(model: RoutedModel): string {
+  return model === 'claude' ? 'Claude' : 'GPT-4o';
+}
+
 export function resolveModelChoice(
   task: string,
-  preference: ModelChoice = 'auto'
+  preference: ModelChoice = 'auto',
+  channelId?: string
 ): RoutedModel {
   if (preference !== 'auto') {
     return preference;
+  }
+
+  const channelPreference = channelId
+    ? ModelPreferenceRepository.getByChannelId(channelId)?.model ?? 'auto'
+    : 'auto';
+
+  if (channelPreference !== 'auto') {
+    return channelPreference;
   }
 
   const codeKeywords = ['code', 'function', 'debug', 'fix', 'implement', 'typescript', 'python'];
@@ -89,12 +107,13 @@ async function callGPT4o(messages: LLMMessage[]): Promise<string> {
 export async function routeToLLM(
   prompt: string,
   preference: ModelChoice = 'auto',
-  messages?: LLMMessage[]
+  messages?: LLMMessage[],
+  channelId?: string
 ): Promise<string> {
-  const selected = resolveModelChoice(prompt, preference);
+  const selected = resolveModelChoice(prompt, preference, channelId);
   const messagePayload = messages ?? [{ role: 'user', content: prompt }];
 
-  console.log(`[LLM] Routing to: ${selected === 'claude' ? 'Claude' : 'GPT-4o'}`);
+  console.log(`[LLM] Routing to: ${getModelLabel(selected)}`);
 
   try {
     return selected === 'claude'

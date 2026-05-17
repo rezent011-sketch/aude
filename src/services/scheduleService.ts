@@ -215,7 +215,9 @@ ${schedule.task}
 - 依頼をそのまま実行してください
 - 回答はそのままDiscordに投稿されます
 - 余計な前置きは避けて、読みやすく整理してください`,
-        'auto'
+        'auto',
+        undefined,
+        schedule.channelId
       );
 
       ScheduleRepository.updateExecutionState(
