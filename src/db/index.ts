@@ -1,6 +1,6 @@
-import Database from 'better-sqlite3';
 import fs from 'fs';
 import path from 'path';
+import { Database } from './sqliteCompat';
 
 const dbPath = path.join(__dirname, '../../data/aude.db');
 
