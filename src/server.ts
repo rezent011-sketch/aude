@@ -755,7 +755,7 @@ function getDashboardHtml(): string {
 }
 
 export function startApiServer(): http.Server {
-  const port = Number(process.env.PORT ?? 3000);
+  const port = Number(process.env.PORT ?? 3001);
   const server = http.createServer(async (req, res) => {
     const method = req.method ?? 'GET';
     const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);

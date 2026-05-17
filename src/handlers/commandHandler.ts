@@ -15,6 +15,13 @@ import { notionCommand } from '../commands/notion';
 import { googleCommand } from '../commands/google';
 import { githubCommand } from '../commands/github';
 import { pendingCommand } from '../commands/pending';
+import {
+  driveCommand,
+  gmailCommand,
+  hubspotCommand,
+  sheetsCommand,
+  vercelCommand,
+} from '../commands/integrations';
 
 export interface Command {
   data: {
@@ -40,6 +47,11 @@ const commands: Command[] = [
   notionCommand,
   googleCommand,
   githubCommand,
+  gmailCommand,
+  sheetsCommand,
+  driveCommand,
+  hubspotCommand,
+  vercelCommand,
 ];
 
 export async function loadCommands(client: Client): Promise<void> {

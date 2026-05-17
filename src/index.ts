@@ -1,4 +1,4 @@
-import { Client, Collection, GatewayIntentBits, Interaction } from 'discord.js';
+import { Client, Collection, GatewayIntentBits, Interaction, Partials } from 'discord.js';
 import 'dotenv/config';
 import { loadCommands } from './handlers/commandHandler';
 import { handleInteraction } from './handlers/interactionHandler';
@@ -14,7 +14,7 @@ const client = new Client({
     GatewayIntentBits.DirectMessages,
     GatewayIntentBits.MessageContent,
   ],
-  partials: ['CHANNEL', 'MESSAGE'] as any,
+  partials: [Partials.Channel, Partials.Message, Partials.User],
 });
 
 // Attach a commands collection to the client
