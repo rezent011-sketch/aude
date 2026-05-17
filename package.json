@@ -20,11 +20,13 @@
   "license": "MIT",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
+    "@stripe/stripe-js": "^9.5.0",
     "@types/better-sqlite3": "^7.6.13",
     "better-sqlite3": "^12.10.0",
     "discord.js": "^14.16.3",
     "dotenv": "^16.5.0",
-    "openai": "^4.95.1"
+    "openai": "^4.95.1",
+    "stripe": "^22.1.1"
   },
   "devDependencies": {
     "@types/node": "^22.15.18",

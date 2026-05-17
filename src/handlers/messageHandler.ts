@@ -1,5 +1,6 @@
 import { Message, Client } from 'discord.js';
 import { routeToLLM } from '../llm/router';
+import { getRecentMessages, saveMessage } from '../db/conversationRepository';
 
 export async function handleMessage(message: Message, client: Client): Promise<void> {
   // Ignore bot messages
@@ -11,29 +12,31 @@ export async function handleMessage(message: Message, client: Client): Promise<v
   // Respond to DMs (no mention needed) or server mentions
   if (!isDM && !isMentioned) return;
 
-  // Clean up the message content (remove user + role mentions)
-  const rawContent = message.content;
-  const content = rawContent
-    .replace(/<@!?\d+>/g, '')   // user mentions
-    .replace(/<@&\d+>/g, '')    // role mentions
-    .trim();
+  const userId = message.author.id;
+  const channelId = message.channel.id;
 
-  console.log(`[MSG] raw="${rawContent}" content="${content}" isDM=${isDM} isMentioned=${isMentioned}`);
+  // Fetch the last 10 messages for context
+  const history = await getRecentMessages(userId, channelId);
 
-  if (!content) {
-    await message.reply("Hi! I'm **Aude** 👋 How can I help you today? Try: `@Aude 競合を調査して`");
-    return;
-  }
+  // Format messages for the LLM
+  const messages = history.map((msg) => ({ role: msg.role, content: msg.content }));
 
-  // Show typing indicator
+  // Append the current message
+  messages.push({ role: 'user', content: message.content.trim() });
+
+  console.log(`[MSG] Fetching history and processing message with userId=${userId} channelId=${channelId}`);
+
   if ('sendTyping' in message.channel) {
     await (message.channel as any).sendTyping();
   }
 
   try {
-    const result = await routeToLLM(
-      `You are Aude, an autonomous AI coworker in Discord. Complete real work — research, coding, writing, analysis. Deliver finished results, not suggestions. Be concise. Reply in the same language the user uses.\n\nUser: ${content}`
-    );
+    // Pass message history to the LLM
+    const result = await routeToLLM(message.content, 'auto', messages);
+
+    // Save current interaction
+    await saveMessage(userId, channelId, 'user', message.content);
+    await saveMessage(userId, channelId, 'assistant', result);
 
     await message.reply(result.slice(0, 1900));
   } catch (err) {

@@ -95,3 +95,120 @@ export async function routeToLLM(
     }
   }
 }
+
+export async function routeToLLM(
+  prompt: string,
+  preference: ModelChoice = 'auto',
+  messages?: Array<{ role: string; content: string }>
+): Promise<string> {
+  const selected = selectModel(prompt, preference);
+
+  console.log();
+
+  try {
+    if (selected === 'claude') {
+      return await callClaudeWithMessages(prompt, messages);
+    } else {
+      return await callGPT4oWithMessages(prompt, messages);
+    }
+  } catch (error: any) {
+    // Fallback: if primary fails, try the other
+    console.warn(, error.message);
+    if (selected === 'claude') {
+      return await callGPT4oWithMessages(prompt, messages);
+    } else {
+      return await callClaudeWithMessages(prompt, messages);
+    }
+  }
+}
+
+async function callClaudeWithMessages(prompt: string, messages?: Array<{ role: string; content: string }>): Promise<string> {
+  const client = getAnthropicClient();
+
+  const response = await client.messages.create({
+    model: 'claude-opus-4-5',
+    max_tokens: 4096,
+    system: SYSTEM_PROMPT,
+    messages: messages ? messages : [{ role: 'user', content: prompt }]
+  });
+
+  const textBlock = response.content.find((b) => b.type === 'text');
+  if (!textBlock || textBlock.type !== 'text') {
+    throw new Error('No text response from Claude');
+  }
+  return textBlock.text;
+}
+
+async function callGPT4oWithMessages(prompt: string, messages?: Array<{ role: string; content: string }>): Promise<string> {
+  const client = getOpenAIClient();
+
+  const response = await client.chat.completions.create({
+    model: 'gpt-4o',
+    max_tokens: 4096,
+    messages: messages ? [{ role: 'system', content: SYSTEM_PROMPT }, ...messages] : [
+      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'user', content: prompt },
+    ]
+  });
+
+  return response.choices[0]?.message?.content ?? 'No response from GPT-4o';
+}
+
+
+export async function routeToLLM(
+  prompt: string,
+  preference: ModelChoice = 'auto',
+  messages?: Array<{ role: string; content: string }>
+): Promise<string> {
+  const selected = selectModel(prompt, preference);
+
+  console.log(`[LLM] Routing to: ${selected === 'claude' ? 'Claude' : 'GPT-4o'}`);
+
+  try {
+    if (selected === 'claude') {
+      return await callClaudeWithMessages(prompt, messages);
+    } else {
+      return await callGPT4oWithMessages(prompt, messages);
+    }
+  } catch (error: any) {
+    // Fallback: if primary fails, try the other
+    console.warn(`[LLM] ${selected} failed, falling back...`, error.message);
+    if (selected === 'claude') {
+      return await callGPT4oWithMessages(prompt, messages);
+    } else {
+      return await callClaudeWithMessages(prompt, messages);
+    }
+  }
+}
+
+async function callClaudeWithMessages(prompt: string, messages?: Array<{ role: string; content: string }>): Promise<string> {
+  const client = getAnthropicClient();
+
+  const response = await client.messages.create({
+    model: 'claude-opus-4-5',
+    max_tokens: 4096,
+    system: SYSTEM_PROMPT,
+    messages: messages ? messages : [{ role: 'user', content: prompt }]
+  });
+
+  const textBlock = response.content.find((b) => b.type === 'text');
+  if (!textBlock || textBlock.type !== 'text') {
+    throw new Error('No text response from Claude');
+  }
+  return textBlock.text;
+}
+
+async function callGPT4oWithMessages(prompt: string, messages?: Array<{ role: string; content: string }>): Promise<string> {
+  const client = getOpenAIClient();
+
+  const response = await client.chat.completions.create({
+    model: 'gpt-4o',
+    max_tokens: 4096,
+    messages: messages ? [{ role: 'system', content: SYSTEM_PROMPT }, ...messages] : [
+      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'user', content: prompt },
+    ]
+  });
+
+  return response.choices[0]?.message?.content ?? 'No response from GPT-4o';
+}

@@ -28,6 +28,15 @@ const createTransactionsTable = `
     description TEXT,
     createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (userId) REFERENCES users(id)
+  CREATE TABLE IF NOT EXISTS conversations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    userId INTEGER,
+    discordChannelId TEXT,
+    role TEXT,
+    content TEXT,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (userId) REFERENCES users(id)
+  );
   );
 `;
 db.exec(createTransactionsTable);
