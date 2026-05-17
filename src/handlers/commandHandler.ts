@@ -10,6 +10,9 @@ import { subscribeCommand } from '../commands/subscribe';
 import { exportCommand } from '../commands/export';
 import { reportCommand } from '../commands/report';
 import { scheduleCommand } from '../commands/schedule';
+import { notionCommand } from '../commands/notion';
+import { googleCommand } from '../commands/google';
+import { githubCommand } from '../commands/github';
 
 export interface Command {
   data: {
@@ -30,6 +33,9 @@ const commands: Command[] = [
   exportCommand,
   reportCommand,
   scheduleCommand,
+  notionCommand,
+  googleCommand,
+  githubCommand,
 ];
 
 export async function loadCommands(client: Client): Promise<void> {

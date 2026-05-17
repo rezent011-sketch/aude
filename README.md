@@ -35,6 +35,9 @@ Build me a landing page for my SaaS product, target audience is developers
 /research    -- Deep research on any topic
 /create      -- Generate content, LPs, documents
 /code        -- Write and execute code
+/notion      -- Search and create Notion pages
+/google      -- List and add Google Calendar events
+/github      -- List and create GitHub issues
 ```
 
 ---
@@ -90,6 +93,13 @@ src/
     research.ts               # /research command
     create.ts                 # /create command
     code.ts                   # /code command
+    notion.ts                 # /notion command
+    google.ts                 # /google command
+    github.ts                 # /github command
+  integrations/
+    notion.ts                 # Notion API client
+    google.ts                 # Google Calendar API client
+    github.ts                 # GitHub API client
   handlers/
     commandHandler.ts         # Load + register commands
     interactionHandler.ts     # Handle slash command interactions
@@ -127,6 +137,12 @@ See `.env.example` for all available variables.
 | `DISCORD_GUILD_ID`    | No       | Guild ID for dev command registration |
 | `ANTHROPIC_API_KEY`   | No*      | Anthropic (Claude) API key       |
 | `OPENAI_API_KEY`      | No*      | OpenAI (GPT-4o) API key          |
+| `NOTION_API_KEY`      | No       | Notion integration token         |
+| `NOTION_DATABASE_ID`  | No       | Notion database ID for page creation |
+| `GOOGLE_CLIENT_ID`    | No       | Google OAuth client ID           |
+| `GOOGLE_CLIENT_SECRET`| No       | Google OAuth client secret       |
+| `GOOGLE_REFRESH_TOKEN`| No       | Google OAuth refresh token       |
+| `GITHUB_TOKEN`        | No       | GitHub personal access token     |
 
 *At least one LLM API key is required.
 
@@ -149,7 +165,7 @@ See `.env.example` for all available variables.
 - [x] LLM router (Claude + GPT-4o)
 - [ ] File generation (PDF, Excel, PPT)
 - [ ] Scheduled automation
-- [ ] External tool integrations (Notion, Google, GitHub)
+- [x] External tool integrations (Notion, Google, GitHub)
 - [ ] Approval flows
 - [ ] Credit system + Stripe billing
 - [ ] Web dashboard
