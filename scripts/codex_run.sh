@@ -34,7 +34,8 @@ send_telegram "🚀 Aude AI 開発開始
 タスク: ${TASK_NAME}
 時刻: $(date '+%Y-%m-%d %H:%M')"
 
-# Codex実行（full-autoモード）
+# Codex実行（OpenAI APIキー直接接続・Pro OAuthの5時間制限を回避）
+OPENAI_API_KEY=$(grep OPENAI_API_KEY ~/.hermes/.env | cut -d= -f2) \
 echo "$PROMPT" | codex exec --dangerously-bypass-approvals-and-sandbox > "$LOG_FILE" 2>&1
 EXIT_CODE=$?
 
