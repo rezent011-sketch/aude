@@ -1,53 +1,43 @@
-// src/handlers/messageHandler.ts -- Handle DM and mention messages
-import { Message, TextBasedChannel } from 'discord.js';
+import { Message, Client } from 'discord.js';
 import { routeToLLM } from '../llm/router';
-import { splitMessage } from '../utils/discord';
 
-export async function handleMessage(message: Message): Promise<void> {
+export async function handleMessage(message: Message, client: Client): Promise<void> {
   // Ignore bot messages
   if (message.author.bot) return;
 
   const isDM = message.channel.isDMBased();
-  const isMentioned = message.mentions.has(message.client.user!);
+  const isMentioned = client.user ? message.mentions.has(client.user) : false;
 
   // Respond to DMs (no mention needed) or server mentions
   if (!isDM && !isMentioned) return;
 
-  // Extract content (remove mention from server messages)
-  let content = message.content;
-  if (isMentioned && message.client.user) {
-    content = content
-      .replace(`<@${message.client.user.id}>`, '')
-      .replace(`<@!${message.client.user.id}>`, '')
-      .trim();
-  }
+  // Clean up the message content (remove user + role mentions)
+  const rawContent = message.content;
+  const content = rawContent
+    .replace(/<@!?\d+>/g, '')   // user mentions
+    .replace(/<@&\d+>/g, '')    // role mentions
+    .trim();
+
+  console.log(`[MSG] raw="${rawContent}" content="${content}" isDM=${isDM} isMentioned=${isMentioned}`);
 
   if (!content) {
-    await message.reply(
-      "Hi! I'm **Aude**, your AI coworker. Tell me what you need and I'll get it done.\n\n" +
-      "Try: `research the top 5 AI tools this month` or use `/task` for slash commands."
-    );
+    await message.reply("Hi! I'm **Aude** 👋 How can I help you today? Try: `@Aude 競合を調査して`");
     return;
   }
 
-  // Show typing indicator (only on channels that support it)
-  const channel = message.channel as TextBasedChannel;
-  if ('sendTyping' in channel) {
-    await (channel as any).sendTyping();
+  // Show typing indicator
+  if ('sendTyping' in message.channel) {
+    await (message.channel as any).sendTyping();
   }
 
   try {
-    const response = await routeToLLM(content, 'auto');
-    const parts = splitMessage(response);
+    const result = await routeToLLM(
+      `You are Aude, an autonomous AI coworker in Discord. Complete real work — research, coding, writing, analysis. Deliver finished results, not suggestions. Be concise. Reply in the same language the user uses.\n\nUser: ${content}`
+    );
 
-      await message.reply(parts[0]);
-    for (let i = 1; i < parts.length; i++) {
-      if ('send' in message.channel) {
-        await (message.channel as any).send(parts[i]);
-      }
-    }
-  } catch (error) {
-    console.error('Error handling message:', error);
-    await message.reply('Failed to process your request. Please try again.');
+    await message.reply(result.slice(0, 1900));
+  } catch (err) {
+    console.error('Error in handleMessage:', err);
+    await message.reply('❌ Something went wrong. Please try again.');
   }
 }

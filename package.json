@@ -10,7 +10,12 @@
     "register": "ts-node src/register-commands.ts",
     "lint": "eslint src/**/*.ts"
   },
-  "keywords": ["discord", "bot", "ai", "automation"],
+  "keywords": [
+    "discord",
+    "bot",
+    "ai",
+    "automation"
+  ],
   "author": "Aude AI",
   "license": "MIT",
   "dependencies": {
@@ -23,5 +28,13 @@
     "@types/node": "^22.15.18",
     "typescript": "^5.8.3",
     "ts-node": "^10.9.2"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rezent011-sketch/aude.git"
+  },
+  "bugs": {
+    "url": "https://github.com/rezent011-sketch/aude/issues"
+  },
+  "homepage": "https://github.com/rezent011-sketch/aude#readme"
 }
