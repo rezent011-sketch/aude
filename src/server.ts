@@ -4,6 +4,12 @@ import { createCheckoutSession } from './stripe/stripeManager';
 import { isSubscriptionPlan } from './stripe/plans';
 import { stripeWebhook } from './webhooks/stripeWebhook';
 import GuildRepository from './db/guildRepository';
+import {
+  getAnalyticsSummary,
+  getDailyStats,
+  getTopUsers,
+  getModelUsageStats,
+} from './services/analyticsService';
 
 interface DashboardUserRow {
   id: number;
@@ -411,6 +417,156 @@ function getGuildsDashboardHtml(): string {
         </table>\`;
       }
       bootstrap().catch(console.error);
+    </script>
+  </body>
+</html>`;
+}
+
+
+function getAnalyticsDashboardHtml(): string {
+  return `<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aude — Analytics</title>
+    <style>
+      :root {
+        --bg: #0f1117; --panel: #16181f; --border: rgba(255,255,255,0.08);
+        --text: #e8eaf0; --muted: #8b8fa8; --accent: #7c6dfa;
+        --green: #22c55e; --red: #ef4444; --yellow: #f59e0b;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; min-height: 100vh; }
+      .shell { max-width: 1000px; margin: 0 auto; padding: 40px 24px; }
+      h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 4px; }
+      .nav { display: flex; gap: 16px; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+      .nav a { color: var(--muted); text-decoration: none; font-size: 0.9rem; }
+      .nav a:hover { color: var(--text); }
+      .nav a.active { color: var(--accent); font-weight: 600; }
+      .period-tabs { display: flex; gap: 8px; margin-bottom: 24px; }
+      .period-btn {
+        padding: 6px 16px; border-radius: 999px; border: 1px solid var(--border);
+        background: transparent; color: var(--muted); cursor: pointer; font-size: 0.85rem;
+      }
+      .period-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+      .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px; }
+      .stat-card { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 20px; }
+      .stat-label { font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+      .stat-value { font-size: 2rem; font-weight: 700; }
+      .stat-sub { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+      .growth-pos { color: var(--green); }
+      .growth-neg { color: var(--red); }
+      .section { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 24px; }
+      .section h2 { font-size: 1rem; font-weight: 600; margin-bottom: 16px; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+      th { color: var(--muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; }
+      .bar-wrap { background: rgba(255,255,255,0.05); border-radius: 4px; height: 8px; overflow: hidden; }
+      .bar { height: 8px; border-radius: 4px; background: var(--accent); }
+      .loading { color: var(--muted); padding: 32px; text-align: center; }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <h1>Aude AI</h1>
+      <nav class="nav">
+        <a href="/">Users</a>
+        <a href="/guilds">Servers</a>
+        <a href="/integrations">Integrations</a>
+        <a href="/analytics" class="active">Analytics</a>
+      </nav>
+
+      <div class="period-tabs">
+        <button class="period-btn active" onclick="loadData(7)">7日</button>
+        <button class="period-btn" onclick="loadData(30)">30日</button>
+        <button class="period-btn" onclick="loadData(90)">90日</button>
+      </div>
+
+      <div id="stats-grid" class="stats-grid"><div class="loading">Loading...</div></div>
+
+      <div class="section">
+        <h2>📈 日別メッセージ数</h2>
+        <div id="daily-table"><div class="loading">Loading...</div></div>
+      </div>
+
+      <div class="section">
+        <h2>🤖 モデル使用状況</h2>
+        <div id="model-table"><div class="loading">Loading...</div></div>
+      </div>
+
+      <div class="section">
+        <h2>🏆 アクティブユーザー</h2>
+        <div id="users-table"><div class="loading">Loading...</div></div>
+      </div>
+    </div>
+
+    <script>
+      const fmt = (n) => Number(n).toLocaleString('ja-JP');
+
+      function setActivePeriod(days) {
+        document.querySelectorAll('.period-btn').forEach(btn => {
+          btn.classList.toggle('active', btn.textContent.replace('日','') == String(days));
+        });
+      }
+
+      async function loadData(days) {
+        setActivePeriod(days);
+        const res = await fetch('/api/analytics?days=' + days);
+        const d = await res.json();
+        renderSummary(d.summary);
+        renderDaily(d.daily);
+        renderModels(d.modelUsage);
+        renderUsers(d.topUsers);
+      }
+
+      function renderSummary(s) {
+        const g = s.growth_rate;
+        const gc = g >= 0 ? 'growth-pos' : 'growth-neg';
+        const gs = (g >= 0 ? '+' : '') + g + '%';
+        document.getElementById('stats-grid').innerHTML = \`
+          <div class="stat-card"><div class="stat-label">総メッセージ</div><div class="stat-value">\${fmt(s.total_messages)}</div><div class="stat-sub">1日平均 \${fmt(s.avg_messages_per_day)}</div></div>
+          <div class="stat-card"><div class="stat-label">ユニークユーザー</div><div class="stat-value">\${fmt(s.total_unique_users)}</div><div class="stat-sub">成長率 <span class="\${gc}">\${gs}</span></div></div>
+          <div class="stat-card"><div class="stat-label">消費クレジット</div><div class="stat-value">\${fmt(s.total_credits_consumed)}</div><div class="stat-sub">ユーザー平均 \${fmt(s.avg_messages_per_user)} msgs</div></div>
+          <div class="stat-card"><div class="stat-label">最もアクティブな日</div><div class="stat-value" style="font-size:1.2rem">\${s.most_active_day ?? '-'}</div><div class="stat-sub">集計期間 \${s.period_days}日</div></div>
+        \`;
+      }
+
+      function renderDaily(daily) {
+        if (!daily.length) { document.getElementById('daily-table').innerHTML = '<div class="loading">データなし</div>'; return; }
+        const max = Math.max(...daily.map(d => d.messages));
+        document.getElementById('daily-table').innerHTML = '<table><thead><tr><th>日付</th><th>メッセージ</th><th>ユーザー</th><th>クレジット消費</th><th>割合</th></tr></thead><tbody>'
+          + daily.map(d => \`<tr>
+              <td>\${d.date}</td>
+              <td>\${fmt(d.messages)}</td>
+              <td>\${fmt(d.unique_users)}</td>
+              <td>\${fmt(d.credits_consumed)}</td>
+              <td><div class="bar-wrap"><div class="bar" style="width:\${max > 0 ? Math.round(d.messages/max*100) : 0}%"></div></div></td>
+            </tr>\`).join('') + '</tbody></table>';
+      }
+
+      function renderModels(models) {
+        document.getElementById('model-table').innerHTML = '<table><thead><tr><th>モデル</th><th>消費クレジット</th><th>シェア</th></tr></thead><tbody>'
+          + models.map(m => \`<tr>
+              <td>\${m.model}</td>
+              <td>\${fmt(m.total_credits)}</td>
+              <td><div class="bar-wrap"><div class="bar" style="width:\${m.percentage}%"></div></div> \${m.percentage}%</td>
+            </tr>\`).join('') + '</tbody></table>';
+      }
+
+      function renderUsers(users) {
+        if (!users.length) { document.getElementById('users-table').innerHTML = '<div class="loading">データなし</div>'; return; }
+        document.getElementById('users-table').innerHTML = '<table><thead><tr><th>順位</th><th>ユーザー</th><th>メッセージ</th><th>クレジット消費</th><th>プラン</th></tr></thead><tbody>'
+          + users.map((u, i) => \`<tr>
+              <td>\${i+1}</td>
+              <td>\${u.username}</td>
+              <td>\${fmt(u.message_count)}</td>
+              <td>\${fmt(u.credits_consumed)}</td>
+              <td>\${u.subscription_plan ?? 'free'}</td>
+            </tr>\`).join('') + '</tbody></table>';
+      }
+
+      loadData(7);
     </script>
   </body>
 </html>`;
@@ -1125,6 +1281,26 @@ export function startApiServer(): http.Server {
 
     if (method === 'GET' && url.pathname === '/guilds') {
       sendHtml(res, 200, getGuildsDashboardHtml());
+      return;
+    }
+
+    if (method === 'GET' && url.pathname === '/analytics') {
+      sendHtml(res, 200, getAnalyticsDashboardHtml());
+      return;
+    }
+
+    if (method === 'GET' && url.pathname === '/api/analytics') {
+      try {
+        const days = Number(url.searchParams.get('days') ?? '30');
+        const summary = getAnalyticsSummary(days);
+        const daily = getDailyStats(Math.min(days, 30));
+        const topUsers = getTopUsers(days, 10);
+        const modelUsage = getModelUsageStats(days);
+        sendJson(res, 200, { summary, daily, topUsers, modelUsage });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        sendJson(res, 500, { error: message });
+      }
       return;
     }
 

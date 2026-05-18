@@ -16,6 +16,7 @@ import { googleCommand } from '../commands/google';
 import { githubCommand } from '../commands/github';
 import { pendingCommand } from '../commands/pending';
 import { configCommand } from '../commands/config';
+import { analyticsCommand } from '../commands/analytics';
 import {
   aiCommand,
   canvaCommand,
@@ -62,6 +63,7 @@ const commands: Command[] = [
   figmaCommand,
   aiCommand,
   configCommand,
+  analyticsCommand,
 ];
 
 export async function loadCommands(client: Client): Promise<void> {
