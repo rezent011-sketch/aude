@@ -3,6 +3,7 @@ import { getDb } from './db/database';
 import { createCheckoutSession } from './stripe/stripeManager';
 import { isSubscriptionPlan } from './stripe/plans';
 import { stripeWebhook } from './webhooks/stripeWebhook';
+import GuildRepository from './db/guildRepository';
 
 interface DashboardUserRow {
   id: number;
@@ -201,6 +202,220 @@ function getDashboardUserDetail(discordUserId: string): {
     recentConversations: conversationStatement.all(user.id) as UserConversationRow[],
   };
 }
+
+function getIntegrationsDashboardHtml(): string {
+  return `<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aude — Integrations</title>
+    <style>
+      :root {
+        --bg: #0f1117;
+        --panel: #16181f;
+        --panel-strong: #1e2029;
+        --border: rgba(255,255,255,0.08);
+        --text: #e8eaf0;
+        --muted: #8b8fa8;
+        --accent: #7c6dfa;
+        --green: #22c55e;
+        --red: #ef4444;
+        --yellow: #f59e0b;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; min-height: 100vh; }
+      .shell { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+      h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 4px; }
+      .nav { display: flex; gap: 16px; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+      .nav a { color: var(--muted); text-decoration: none; font-size: 0.9rem; }
+      .nav a:hover { color: var(--text); }
+      .nav a.active { color: var(--accent); font-weight: 600; }
+      .subtitle { color: var(--muted); font-size: 0.9rem; margin-bottom: 32px; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .card-icon { font-size: 2rem; width: 48px; text-align: center; }
+      .card-info { flex: 1; }
+      .card-name { font-weight: 600; font-size: 1rem; margin-bottom: 4px; }
+      .card-type { font-size: 0.78rem; color: var(--muted); margin-bottom: 8px; }
+      .badge {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 4px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 600;
+      }
+      .badge.ok { background: rgba(34,197,94,0.15); color: var(--green); }
+      .badge.ng { background: rgba(239,68,68,0.15); color: var(--red); }
+      .badge::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+      .section-title { font-size: 1.1rem; font-weight: 600; margin: 32px 0 16px; color: var(--text); }
+      .loading { color: var(--muted); padding: 24px; text-align: center; }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <h1>Aude AI</h1>
+      <nav class="nav">
+        <a href="/">Users</a>
+        <a href="/guilds">Servers</a>
+        <a href="/integrations" class="active">Integrations</a>
+      </nav>
+      <p class="subtitle">外部ツール・APIキーの設定状況です。未設定の場合は .env に追加してください。</p>
+
+      <div class="section-title">🤖 AI Models</div>
+      <div id="ai-grid" class="grid"><div class="loading">Loading...</div></div>
+
+      <div class="section-title">💳 Billing</div>
+      <div id="billing-grid" class="grid"><div class="loading">Loading...</div></div>
+
+      <div class="section-title">🔧 Productivity</div>
+      <div id="productivity-grid" class="grid"><div class="loading">Loading...</div></div>
+
+      <div class="section-title">🎨 Design & Media</div>
+      <div id="design-grid" class="grid"><div class="loading">Loading...</div></div>
+    </div>
+    <script>
+      const INTEGRATIONS = {
+        ai: [
+          { key: 'openai', name: 'OpenAI', icon: '🧠', type: 'AI Model (GPT-4o, gpt-5.4)' },
+          { key: 'anthropic', name: 'Anthropic', icon: '🤖', type: 'AI Model (Claude)' },
+          { key: 'gemini', name: 'Google Gemini', icon: '✨', type: 'AI Model (Gemini)' },
+        ],
+        billing: [
+          { key: 'stripe', name: 'Stripe', icon: '💳', type: 'Payment Processing' },
+        ],
+        productivity: [
+          { key: 'notion', name: 'Notion', icon: '📝', type: 'Note-taking & Wiki' },
+          { key: 'github', name: 'GitHub', icon: '🐙', type: 'Code Repository' },
+          { key: 'google', name: 'Google Workspace', icon: '📧', type: 'Gmail / Calendar / Drive' },
+          { key: 'hubspot', name: 'HubSpot', icon: '🏢', type: 'CRM' },
+          { key: 'vercel', name: 'Vercel', icon: '▲', type: 'Deployment' },
+          { key: 'fireflies', name: 'Fireflies.ai', icon: '🔥', type: 'Meeting Transcription' },
+        ],
+        design: [
+          { key: 'canva', name: 'Canva', icon: '🎨', type: 'Design Tool' },
+          { key: 'figma', name: 'Figma', icon: '🖼️', type: 'UI Design' },
+        ],
+      };
+
+      function renderCards(containerId, items, status) {
+        const el = document.getElementById(containerId);
+        el.innerHTML = items.map(item => {
+          const ok = status[item.key];
+          return \`<div class="card">
+            <div class="card-icon">\${item.icon}</div>
+            <div class="card-info">
+              <div class="card-name">\${item.name}</div>
+              <div class="card-type">\${item.type}</div>
+              <span class="badge \${ok ? 'ok' : 'ng'}">\${ok ? '設定済み' : '未設定'}</span>
+            </div>
+          </div>\`;
+        }).join('');
+      }
+
+      async function bootstrap() {
+        const res = await fetch('/api/integrations/status');
+        const status = await res.json();
+        renderCards('ai-grid', INTEGRATIONS.ai, status);
+        renderCards('billing-grid', INTEGRATIONS.billing, status);
+        renderCards('productivity-grid', INTEGRATIONS.productivity, status);
+        renderCards('design-grid', INTEGRATIONS.design, status);
+      }
+
+      bootstrap().catch(console.error);
+    </script>
+  </body>
+</html>`;
+}
+
+function getGuildsDashboardHtml(): string {
+  return `<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aude — Servers</title>
+    <style>
+      :root {
+        --bg: #0f1117; --panel: #16181f; --panel-strong: #1e2029;
+        --border: rgba(255,255,255,0.08); --text: #e8eaf0; --muted: #8b8fa8;
+        --accent: #7c6dfa;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; min-height: 100vh; }
+      .shell { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+      h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 4px; }
+      .nav { display: flex; gap: 16px; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+      .nav a { color: var(--muted); text-decoration: none; font-size: 0.9rem; }
+      .nav a:hover { color: var(--text); }
+      .nav a.active { color: var(--accent); font-weight: 600; }
+      .subtitle { color: var(--muted); font-size: 0.9rem; margin-bottom: 32px; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.88rem; }
+      th { color: var(--muted); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; }
+      tr:hover td { background: var(--panel); }
+      .tag {
+        display: inline-block; padding: 2px 8px; border-radius: 999px;
+        font-size: 0.75rem; font-weight: 600;
+        background: rgba(124,109,250,0.15); color: var(--accent);
+      }
+      .empty { padding: 40px; text-align: center; color: var(--muted); }
+      .loading { padding: 40px; text-align: center; color: var(--muted); }
+      .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <h1>Aude AI</h1>
+      <nav class="nav">
+        <a href="/">Users</a>
+        <a href="/guilds" class="active">Servers</a>
+        <a href="/integrations">Integrations</a>
+      </nav>
+      <p class="subtitle">Aude が参加しているサーバーとその設定です。</p>
+      <div class="panel">
+        <div id="content"><div class="loading">Loading...</div></div>
+      </div>
+    </div>
+    <script>
+      const formatDate = v => v ? new Date(v).toLocaleString('ja-JP') : '-';
+
+      async function bootstrap() {
+        const res = await fetch('/api/guilds');
+        const guilds = await res.json();
+        const el = document.getElementById('content');
+        if (!guilds.length) {
+          el.innerHTML = '<div class="empty">まだサーバーデータがありません。<br>Aude を Discord サーバーに招待して /config view を実行すると記録されます。</div>';
+          return;
+        }
+        el.innerHTML = \`<table>
+          <thead><tr>
+            <th>Server</th><th>ID</th><th>Default Model</th>
+            <th>Prefix</th><th>Max Credits</th><th>Updated</th>
+          </tr></thead>
+          <tbody>
+            \${guilds.map(g => \`<tr>
+              <td>\${g.guild_name || '-'}</td>
+              <td style="color:var(--muted);font-size:0.8rem">\${g.guild_id}</td>
+              <td><span class="tag">\${g.default_model}</span></td>
+              <td><code>\${g.prefix}</code></td>
+              <td>\${g.max_credits_per_user}</td>
+              <td>\${formatDate(g.updated_at)}</td>
+            </tr>\`).join('')}
+          </tbody>
+        </table>\`;
+      }
+      bootstrap().catch(console.error);
+    </script>
+  </body>
+</html>`;
+}
+
 
 function getDashboardHtml(): string {
   return String.raw`<!DOCTYPE html>
@@ -865,6 +1080,51 @@ export function startApiServer(): http.Server {
           },
         }
       );
+      return;
+    }
+
+    if (method === 'GET' && url.pathname === '/api/guilds') {
+      try {
+        const guilds = GuildRepository.listAll();
+        sendJson(res, 200, guilds);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        sendJson(res, 500, { error: message });
+      }
+      return;
+    }
+
+    if (method === 'GET' && url.pathname === '/api/integrations/status') {
+      try {
+        const status = {
+          openai: Boolean(process.env.OPENAI_API_KEY?.trim()),
+          anthropic: Boolean(process.env.ANTHROPIC_API_KEY?.trim()),
+          gemini: Boolean(process.env.GEMINI_API_KEY?.trim()),
+          stripe: Boolean(process.env.STRIPE_SECRET_KEY?.trim()),
+          notion: Boolean(process.env.NOTION_API_KEY?.trim()),
+          github: Boolean(process.env.GITHUB_TOKEN?.trim()),
+          google: Boolean(process.env.GOOGLE_CLIENT_ID?.trim()),
+          hubspot: Boolean(process.env.HUBSPOT_ACCESS_TOKEN?.trim()),
+          vercel: Boolean(process.env.VERCEL_TOKEN?.trim()),
+          fireflies: Boolean(process.env.FIREFLIES_API_KEY?.trim()),
+          canva: Boolean(process.env.CANVA_CLIENT_ID?.trim()),
+          figma: Boolean(process.env.FIGMA_ACCESS_TOKEN?.trim()),
+        };
+        sendJson(res, 200, status);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        sendJson(res, 500, { error: message });
+      }
+      return;
+    }
+
+    if (method === 'GET' && url.pathname === '/integrations') {
+      sendHtml(res, 200, getIntegrationsDashboardHtml());
+      return;
+    }
+
+    if (method === 'GET' && url.pathname === '/guilds') {
+      sendHtml(res, 200, getGuildsDashboardHtml());
       return;
     }
 
