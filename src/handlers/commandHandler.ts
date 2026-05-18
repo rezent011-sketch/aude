@@ -15,6 +15,7 @@ import { notionCommand } from '../commands/notion';
 import { googleCommand } from '../commands/google';
 import { githubCommand } from '../commands/github';
 import { pendingCommand } from '../commands/pending';
+import { configCommand } from '../commands/config';
 import {
   aiCommand,
   canvaCommand,
@@ -60,6 +61,7 @@ const commands: Command[] = [
   canvaCommand,
   figmaCommand,
   aiCommand,
+  configCommand,
 ];
 
 export async function loadCommands(client: Client): Promise<void> {

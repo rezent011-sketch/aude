@@ -116,6 +116,20 @@ db.exec(`
 `);
 
 db.exec(`
+  CREATE TABLE IF NOT EXISTS guild_settings (
+    guild_id TEXT PRIMARY KEY,
+    guild_name TEXT NOT NULL DEFAULT '',
+    prefix TEXT NOT NULL DEFAULT '!',
+    default_model TEXT NOT NULL DEFAULT 'auto',
+    admin_role_id TEXT,
+    welcome_channel_id TEXT,
+    max_credits_per_user INTEGER NOT NULL DEFAULT 100,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
+`);
+
+db.exec(`
   CREATE TRIGGER IF NOT EXISTS users_set_updated_at
   AFTER UPDATE ON users
   FOR EACH ROW

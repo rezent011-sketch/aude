@@ -7,7 +7,8 @@ import {
 } from '../credits/checker';
 import { creditsManager } from '../credits/manager';
 import UserRepository from '../db/userRepository';
-import { resolveModelChoice, routeToLLM } from '../llm/router';
+import GuildRepository from '../db/guildRepository';
+import { ModelChoice, resolveModelChoice, routeToLLM } from '../llm/router';
 import { replyToMessageWithError } from '../utils/errorHandler';
 
 export async function handleMessage(message: Message, client: Client): Promise<void> {
@@ -30,8 +31,19 @@ export async function handleMessage(message: Message, client: Client): Promise<v
   const discordId = message.author.id;
   const username = message.author.username;
   const channelId = message.channel.id;
+  const guildId = message.guild?.id ?? null;
   const user = UserRepository.getOrCreateUser(discordId, username);
-  const selectedModel = resolveModelChoice(prompt, 'auto', channelId);
+
+  // ギルド設定のデフォルトモデルをフォールバックとして使用
+  let guildDefaultModel: ModelChoice = 'auto';
+  if (guildId) {
+    const guildSettings = GuildRepository.getByGuildId(guildId);
+    if (guildSettings && guildSettings.default_model !== 'auto') {
+      guildDefaultModel = guildSettings.default_model as ModelChoice;
+    }
+  }
+
+  const selectedModel = resolveModelChoice(prompt, guildDefaultModel, channelId);
 
   console.log(
     `[MSG] channelId=${channelId} discordId=${discordId} model=${selectedModel}`
