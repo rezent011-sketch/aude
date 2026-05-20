@@ -18,6 +18,7 @@ import { pendingCommand } from '../commands/pending';
 import { configCommand } from '../commands/config';
 import { analyticsCommand } from '../commands/analytics';
 import { memoryCommand } from '../commands/memory';
+import { tmemoryCommand } from '../commands/tmemory';
 import { browseCommand } from '../commands/browse';
 import {
   aiCommand,
@@ -67,6 +68,7 @@ const commands: Command[] = [
   configCommand,
   analyticsCommand,
   memoryCommand,
+  tmemoryCommand,
   browseCommand,
 ];
 

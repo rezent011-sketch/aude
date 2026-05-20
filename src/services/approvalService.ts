@@ -241,7 +241,9 @@ class ApprovalService {
         buildTaskPrompt(approval.taskDescription),
         approval.model,
         undefined,
-        approval.channelId
+        approval.channelId,
+        undefined,
+        approval.guildId
       );
     } catch (error) {
       console.error(`Error executing approved task #${approval.id}:`, error);

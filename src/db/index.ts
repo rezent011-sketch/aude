@@ -199,11 +199,40 @@ db.exec(`
 `);
 
 db.exec(`
+  CREATE TABLE IF NOT EXISTS team_memories (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    guild_id TEXT NOT NULL,
+    added_by TEXT NOT NULL,
+    memory_type TEXT CHECK(memory_type IN ('fact','rule','context','goal')) NOT NULL DEFAULT 'fact',
+    content TEXT NOT NULL,
+    importance INTEGER NOT NULL DEFAULT 5,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
+`);
+
+db.exec(`
+  CREATE INDEX IF NOT EXISTS idx_team_memories_guild
+  ON team_memories(guild_id);
+`);
+
+db.exec(`
   CREATE TRIGGER IF NOT EXISTS user_memories_set_updated_at
   AFTER UPDATE ON user_memories
   FOR EACH ROW
   BEGIN
     UPDATE user_memories
+    SET updated_at = CURRENT_TIMESTAMP
+    WHERE id = NEW.id;
+  END;
+`);
+
+db.exec(`
+  CREATE TRIGGER IF NOT EXISTS team_memories_set_updated_at
+  AFTER UPDATE ON team_memories
+  FOR EACH ROW
+  BEGIN
+    UPDATE team_memories
     SET updated_at = CURRENT_TIMESTAMP
     WHERE id = NEW.id;
   END;

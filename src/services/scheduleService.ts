@@ -212,12 +212,14 @@ class ScheduleService {
 ${schedule.task}
 
 実行ルール:
-- 依頼をそのまま実行してください
-- 回答はそのままDiscordに投稿されます
-- 余計な前置きは避けて、読みやすく整理してください`,
+        - 依頼をそのまま実行してください
+        - 回答はそのままDiscordに投稿されます
+        - 余計な前置きは避けて、読みやすく整理してください`,
         'auto',
         undefined,
-        schedule.channelId
+        schedule.channelId,
+        undefined,
+        schedule.guildId
       );
 
       ScheduleRepository.updateExecutionState(

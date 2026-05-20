@@ -2,6 +2,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import ModelPreferenceRepository from '../db/modelPreferenceRepository';
+import { buildTeamMemoryContext } from '../services/teamMemoryService';
 
 export type ModelChoice = 'claude' | 'gpt4o' | 'auto';
 export type RoutedModel = Exclude<ModelChoice, 'auto'>;
@@ -71,18 +72,23 @@ const SYSTEM_PROMPT = `You are Aude, an autonomous AI coworker that lives in Dis
 You help users with research, coding, content creation, and automation tasks.
 Be concise, actionable, and get straight to results. Format responses with Discord markdown.`;
 
-function buildSystemPrompt(memoryContext?: string): string {
-  if (!memoryContext) return SYSTEM_PROMPT;
-  return `${SYSTEM_PROMPT}\n${memoryContext}`;
+function buildSystemPrompt(memoryContext?: string, guildId?: string): string {
+  const sections = [memoryContext ?? '', buildTeamMemoryContext(guildId ?? null)].filter(Boolean);
+  if (sections.length === 0) return SYSTEM_PROMPT;
+  return `${SYSTEM_PROMPT}\n${sections.join('')}`;
 }
 
-async function callClaude(messages: LLMMessage[], systemPrompt?: string): Promise<string> {
+async function callClaude(
+  messages: LLMMessage[],
+  systemPrompt?: string,
+  guildId?: string
+): Promise<string> {
   const client = getAnthropicClient();
 
   const response = await client.messages.create({
     model: 'claude-opus-4-5',
     max_tokens: 4096,
-    system: buildSystemPrompt(systemPrompt),
+    system: buildSystemPrompt(systemPrompt, guildId),
     messages,
   });
 
@@ -94,14 +100,18 @@ async function callClaude(messages: LLMMessage[], systemPrompt?: string): Promis
   return textBlock.text;
 }
 
-async function callGPT4o(messages: LLMMessage[], systemPrompt?: string): Promise<string> {
+async function callGPT4o(
+  messages: LLMMessage[],
+  systemPrompt?: string,
+  guildId?: string
+): Promise<string> {
   const client = getOpenAIClient();
 
   const response = await client.chat.completions.create({
     model: 'gpt-4o',
     max_tokens: 4096,
     messages: [
-      { role: 'system', content: buildSystemPrompt(systemPrompt) },
+      { role: 'system', content: buildSystemPrompt(systemPrompt, guildId) },
       ...messages,
     ],
   });
@@ -114,7 +124,8 @@ export async function routeToLLM(
   preference: ModelChoice = 'auto',
   messages?: LLMMessage[],
   channelId?: string,
-  memoryContext?: string
+  memoryContext?: string,
+  guildId?: string
 ): Promise<string> {
   const selected = resolveModelChoice(prompt, preference, channelId);
   const messagePayload = messages ?? [{ role: 'user', content: prompt }];
@@ -123,14 +134,14 @@ export async function routeToLLM(
 
   try {
     return selected === 'claude'
-      ? await callClaude(messagePayload, memoryContext)
-      : await callGPT4o(messagePayload, memoryContext);
+      ? await callClaude(messagePayload, memoryContext, guildId)
+      : await callGPT4o(messagePayload, memoryContext, guildId);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.warn(`[LLM] ${selected} failed, falling back...`, message);
 
     return selected === 'claude'
-      ? await callGPT4o(messagePayload, memoryContext)
-      : await callClaude(messagePayload, memoryContext);
+      ? await callGPT4o(messagePayload, memoryContext, guildId)
+      : await callClaude(messagePayload, memoryContext, guildId);
   }
 }

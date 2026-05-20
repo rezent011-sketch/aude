@@ -43,7 +43,14 @@ export const taskCommand = {
 Please complete this task thoroughly and return the results.`;
 
     try {
-      const result = await routeToLLM(prompt, model, undefined, interaction.channelId);
+      const result = await routeToLLM(
+        prompt,
+        model,
+        undefined,
+        interaction.channelId,
+        undefined,
+        interaction.guildId ?? undefined
+      );
       const elapsed = formatElapsed(startTime);
       const parts = splitMessage(result);
 

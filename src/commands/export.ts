@@ -47,6 +47,7 @@ function parseJson<T>(raw: string): T {
 }
 
 async function buildExcelPayload(
+  guildId: string | null,
   channelId: string,
   messages: ExportMessageRecord[]
 ): Promise<ExcelExportPayload> {
@@ -63,7 +64,14 @@ async function buildExcelPayload(
     buildConversationTranscript(channelId, messages),
   ].join('\n');
 
-  const response = await routeToLLM(prompt, 'auto', undefined, channelId);
+  const response = await routeToLLM(
+    prompt,
+    'auto',
+    undefined,
+    channelId,
+    undefined,
+    guildId ?? undefined
+  );
   const parsed = parseJson<ExcelExportPayload>(response);
 
   if (!parsed.title || !Array.isArray(parsed.headers) || !Array.isArray(parsed.rows)) {
@@ -78,6 +86,7 @@ async function buildExcelPayload(
 }
 
 async function buildPptxPayload(
+  guildId: string | null,
   channelId: string,
   messages: ExportMessageRecord[]
 ): Promise<PptxExportPayload> {
@@ -94,7 +103,14 @@ async function buildPptxPayload(
     buildConversationTranscript(channelId, messages),
   ].join('\n');
 
-  const response = await routeToLLM(prompt, 'auto', undefined, channelId);
+  const response = await routeToLLM(
+    prompt,
+    'auto',
+    undefined,
+    channelId,
+    undefined,
+    guildId ?? undefined
+  );
   const parsed = parseJson<PptxExportPayload>(response);
 
   if (!parsed.title || !Array.isArray(parsed.slides)) {
@@ -132,6 +148,7 @@ export const exportCommand = {
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     const format = interaction.options.getString('format', true) as ExportFormat;
     const channelId = interaction.channelId;
+    const guildId = interaction.guildId;
 
     await interaction.deferReply({ ephemeral: true });
 
@@ -146,10 +163,10 @@ export const exportCommand = {
 
     try {
       if (format === 'excel') {
-        const payload = await buildExcelPayload(channelId, messages);
+        const payload = await buildExcelPayload(guildId, channelId, messages);
         generatedFile = await generateExcelExport(payload);
       } else if (format === 'pptx') {
-        const payload = await buildPptxPayload(channelId, messages);
+        const payload = await buildPptxPayload(guildId, channelId, messages);
         generatedFile = await generatePptxExport(payload);
       } else {
         generatedFile = await generateConversationExport(channelId, format);

@@ -11,6 +11,7 @@ import GuildRepository from '../db/guildRepository';
 import { ModelChoice, resolveModelChoice, routeToLLM } from '../llm/router';
 import { replyToMessageWithError } from '../utils/errorHandler';
 import { buildMemoryContext, extractMemoriesFromConversation } from '../services/memoryService';
+import { extractAndSaveTeamMemory } from '../services/teamMemoryService';
 
 export async function handleMessage(message: Message, client: Client): Promise<void> {
   if (message.author.bot) {
@@ -64,6 +65,7 @@ export async function handleMessage(message: Message, client: Client): Promise<v
     // ユーザー発言からメモリを自動抽出（バックグラウンド処理）
     try {
       extractMemoriesFromConversation(discordId, prompt);
+      extractAndSaveTeamMemory(guildId, discordId, prompt);
     } catch (memErr) {
       console.warn('[Memory] Auto-extract failed:', memErr);
     }
@@ -75,7 +77,14 @@ export async function handleMessage(message: Message, client: Client): Promise<v
     creditsManager.consume(discordId, username, selectedModel);
     creditsCharged = true;
 
-    const result = await routeToLLM(prompt, selectedModel, messages, channelId, memoryContext || undefined);
+    const result = await routeToLLM(
+      prompt,
+      selectedModel,
+      messages,
+      channelId,
+      memoryContext || undefined,
+      guildId ?? undefined
+    );
 
     await conversationHistory.append(channelId, user.id, 'user', prompt);
     await conversationHistory.append(channelId, user.id, 'assistant', result);
