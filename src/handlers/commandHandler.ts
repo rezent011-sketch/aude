@@ -37,6 +37,7 @@ import { freeeCommand } from '../commands/freee';
 import { kintoneCommand } from '../commands/kintone';
 import { imageCommand } from '../commands/image';
 import { videoCommand } from '../commands/video';
+import { websiteCommand } from '../commands/website';
 import {
   aiCommand,
   canvaCommand,
@@ -104,6 +105,7 @@ const commands: Command[] = [
   vaultCommand,
   imageCommand,
   videoCommand,
+  websiteCommand,
 ];
 
 export async function loadCommands(client: Client): Promise<void> {
