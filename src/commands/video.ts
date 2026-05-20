@@ -60,10 +60,7 @@ export const videoCommand: Command = {
         : await generateVideo(prompt, duration, ratio);
 
       await interaction.editReply(
-        '🎬 **動画生成完了！**\n' +
-          '> ' + prompt + '\n' +
-          ' | Kling v2.1\n\n' +
-          '🔗 ' + result.url
+        `🎬 **動画生成完了！**\n> ${prompt}\n\`${duration}秒 / ${ratio}\` | Kling v2.1\n\n🔗 ${result.url}`
       );
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);

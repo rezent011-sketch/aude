@@ -91,7 +91,8 @@ function buildSystemPrompt(memoryContext?: string, guildId?: string): string {
 async function callClaudeWithTools(
   messages: LLMMessage[],
   systemPrompt?: string,
-  guildId?: string
+  guildId?: string,
+  channelId?: string
 ): Promise<string> {
   const client = getAnthropicClient();
   const tools = getAvailableTools();
@@ -125,7 +126,11 @@ async function callClaudeWithTools(
     for (const block of response.content) {
       if (block.type === 'tool_use') {
         console.log(`[Tool] Claude calling: ${block.name}`, block.input);
-        const result = await executeToolCall(block.name, block.input as Record<string, unknown>);
+        const args = block.input as Record<string, unknown>;
+        if (channelId) {
+          args.channel_id = channelId;
+        }
+        const result = await executeToolCall(block.name, args);
         toolResults.push({
           type: 'tool_result',
           tool_use_id: block.id,
@@ -157,7 +162,8 @@ async function callClaudeWithTools(
 async function callGPT4oWithTools(
   messages: LLMMessage[],
   systemPrompt?: string,
-  guildId?: string
+  guildId?: string,
+  channelId?: string
 ): Promise<string> {
   const client = getOpenAIClient();
   const tools = getAvailableTools();
@@ -192,6 +198,9 @@ async function callGPT4oWithTools(
 
     for (const toolCall of msg.tool_calls) {
       const args = JSON.parse(toolCall.function.arguments || '{}') as Record<string, unknown>;
+      if (channelId) {
+        args.channel_id = channelId;
+      }
       console.log(`[Tool] GPT-4o calling: ${toolCall.function.name}`, args);
       const result = await executeToolCall(toolCall.function.name, args);
       currentMessages.push({
@@ -224,12 +233,12 @@ export async function routeToLLM(
   try {
     if (selected === 'claude') {
       return enableTools
-        ? await callClaudeWithTools(messagePayload, memoryContext, guildId)
-        : await callClaudeWithTools(messagePayload, memoryContext, guildId); // tools=[] if none available
+        ? await callClaudeWithTools(messagePayload, memoryContext, guildId, channelId)
+        : await callClaudeWithTools(messagePayload, memoryContext, guildId, channelId); // tools=[] if none available
     } else {
       return enableTools
-        ? await callGPT4oWithTools(messagePayload, memoryContext, guildId)
-        : await callGPT4oWithTools(messagePayload, memoryContext, guildId);
+        ? await callGPT4oWithTools(messagePayload, memoryContext, guildId, channelId)
+        : await callGPT4oWithTools(messagePayload, memoryContext, guildId, channelId);
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -237,8 +246,8 @@ export async function routeToLLM(
 
     try {
       return selected === 'claude'
-        ? await callGPT4oWithTools(messagePayload, memoryContext, guildId)
-        : await callClaudeWithTools(messagePayload, memoryContext, guildId);
+        ? await callGPT4oWithTools(messagePayload, memoryContext, guildId, channelId)
+        : await callClaudeWithTools(messagePayload, memoryContext, guildId, channelId);
     } catch (fallbackError) {
       const fbMsg = fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
       console.error(`[LLM] Fallback also failed:`, fbMsg);

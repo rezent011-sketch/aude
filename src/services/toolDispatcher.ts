@@ -16,6 +16,7 @@ import { listIssues as backlogListIssues, createIssue as backlogCreateIssue } fr
 import { listAlerts as datadogListAlerts, getMetrics } from '../integrations/datadog';
 import { listIncidents } from '../integrations/pagerduty';
 import { generateImage, generateVideo, imageToVideo } from '../integrations/fal';
+import { sendDiscordMessage } from './discordClient';
 
 // ──────────────────────────────────────────────
 // ツール定義 (OpenAI function_call / Anthropic tool format)
@@ -365,6 +366,7 @@ export function getAvailableTools(): ToolDefinition[] {
           duration: { type: 'number', description: '動画の長さ（秒）: 5 または 10', enum: ['5', '10'] },
           aspect_ratio: { type: 'string', description: 'アスペクト比', enum: ['16:9', '9:16', '1:1'] },
           image_url: { type: 'string', description: 'この画像URLを動画に変換する場合に指定（省略可）' },
+          channel_id: { type: 'string', description: '完了通知を送るDiscordチャンネルID' },
         },
         required: ['prompt'],
       },
@@ -651,17 +653,53 @@ export async function executeToolCall(
         const vidDuration = (args.duration as 5 | 10) ?? 5;
         const vidRatio = (args.aspect_ratio as '16:9' | '9:16' | '1:1') ?? '16:9';
         const vidImageUrl = args.image_url as string | undefined;
+        const channelId = args.channel_id as string | undefined;
 
         // 非同期で生成開始（awaitしない）
         const vidPromise = vidImageUrl
           ? imageToVideo(vidImageUrl, vidPrompt, vidDuration)
           : generateVideo(vidPrompt, vidDuration, vidRatio);
 
-        vidPromise.then((result) => {
-          console.log(`[Tool] Video generation complete: ${result.url}`);
-        }).catch((err: Error) => {
-          console.error(`[Tool] Video generation failed: ${err.message}`);
-        });
+        vidPromise
+          .then(async (result) => {
+            console.log(`[Tool] Video generation complete: ${result.url}`);
+
+            if (!channelId) {
+              return;
+            }
+
+            const completionMessage = [
+              '🎬 **動画生成が完了しました！**',
+              `🔗 ${result.url}`,
+              '',
+              `長さ: ${vidDuration}秒 / ${vidRatio}`,
+              vidImageUrl ? `元画像: ${vidImageUrl}` : '生成方式: text-to-video',
+              `プロンプト: ${truncate(vidPrompt, 300)}`,
+            ].join('\n');
+
+            await sendDiscordMessage(channelId, completionMessage);
+          })
+          .catch(async (err: Error) => {
+            console.error(`[Tool] Video generation failed: ${err.message}`);
+
+            if (!channelId) {
+              return;
+            }
+
+            try {
+              await sendDiscordMessage(
+                channelId,
+                [
+                  '⚠️ **動画生成に失敗しました**',
+                  `長さ: ${vidDuration}秒 / ${vidRatio}`,
+                  `理由: ${truncate(err.message, 300)}`,
+                  `プロンプト: ${truncate(vidPrompt, 300)}`,
+                ].join('\n')
+              );
+            } catch (notifyError) {
+              console.error('[Tool] Failed to send video failure notification:', notifyError);
+            }
+          });
 
         return `🎬 **動画生成を開始しました！**\n\n⏳ Kling v2.1で生成中（約1〜2分）\n\n完了したら自動でお知らせします。\n\nプロンプト: ${vidPrompt.slice(0, 100)}`;
       }

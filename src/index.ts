@@ -6,6 +6,7 @@ import { handleMessage } from './handlers/messageHandler';
 import { startApiServer } from './server';
 import approvalService from './services/approvalService';
 import alertService from './services/alertService';
+import { setDiscordClient } from './services/discordClient';
 import scheduleService from './services/scheduleService';
 import GuildRepository from './db/guildRepository';
 
@@ -24,6 +25,7 @@ const client = new Client({
 
 client.once('ready', async () => {
   console.log(`✅ Logged in as ${client.user?.tag}`);
+  setDiscordClient(client);
 
   // Sync all current guilds to DB on startup
   for (const guild of client.guilds.cache.values()) {
