@@ -17,6 +17,8 @@ import { googleCommand } from '../commands/google';
 import { githubCommand } from '../commands/github';
 import { gitlabCommand } from '../commands/gitlab';
 import { linearCommand } from '../commands/linear';
+import { jiraCommand } from '../commands/jira';
+import { backlogCommand } from '../commands/backlog';
 import { pendingCommand } from '../commands/pending';
 import { configCommand } from '../commands/config';
 import { analyticsCommand } from '../commands/analytics';
@@ -64,6 +66,8 @@ const commands: Command[] = [
   githubCommand,
   gitlabCommand,
   linearCommand,
+  jiraCommand,
+  backlogCommand,
   gmailCommand,
   sheetsCommand,
   driveCommand,
