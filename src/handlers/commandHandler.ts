@@ -15,6 +15,8 @@ import { scheduleCommand } from '../commands/schedule';
 import { notionCommand } from '../commands/notion';
 import { googleCommand } from '../commands/google';
 import { githubCommand } from '../commands/github';
+import { gitlabCommand } from '../commands/gitlab';
+import { linearCommand } from '../commands/linear';
 import { pendingCommand } from '../commands/pending';
 import { configCommand } from '../commands/config';
 import { analyticsCommand } from '../commands/analytics';
@@ -60,6 +62,8 @@ const commands: Command[] = [
   notionCommand,
   googleCommand,
   githubCommand,
+  gitlabCommand,
+  linearCommand,
   gmailCommand,
   sheetsCommand,
   driveCommand,
