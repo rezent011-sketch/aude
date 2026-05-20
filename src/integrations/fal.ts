@@ -53,16 +53,9 @@ export async function generateVideo(
 ): Promise<FalVideoResult> {
   configure();
 
-  // LTX Video: num_frames で長さを指定（24fps × 5秒 = 121フレーム、10秒 = 241フレーム）
-  const numFrames = duration === 10 ? 241 : 121;
-  const [width, height] =
-    aspectRatio === '9:16' ? [512, 896]
-    : aspectRatio === '1:1' ? [704, 704]
-    : [704, 480]; // 16:9
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const result = await falClient.subscribe('fal-ai/ltx-video', {
-    input: { prompt, num_frames: numFrames, width, height, fps: 24 } as any,
+  // MiniMax Video-01: 1080p高品質動画生成
+  const result = await falClient.subscribe('fal-ai/minimax-video', {
+    input: { prompt, prompt_optimizer: true } as any,
     logs: false,
     onQueueUpdate: () => { /* silent */ },
   }) as unknown as { data: { video?: { url: string } } };
@@ -80,12 +73,9 @@ export async function imageToVideo(
 ): Promise<FalVideoResult> {
   configure();
 
-  // LTX Video image-to-video
-  const numFrames = duration === 10 ? 241 : 121;
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const result = await falClient.subscribe('fal-ai/ltx-video/image-to-video', {
-    input: { image_url: imageUrl, prompt, num_frames: numFrames, fps: 24 } as any,
+  // MiniMax image-to-video
+  const result = await falClient.subscribe('fal-ai/minimax-video/image-to-video', {
+    input: { image_url: imageUrl, prompt, prompt_optimizer: true } as any,
     logs: false,
     onQueueUpdate: () => { /* silent */ },
   }) as unknown as { data: { video?: { url: string } } };
