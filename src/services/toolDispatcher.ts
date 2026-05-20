@@ -15,6 +15,7 @@ import { sendMessage as chatworkSendMessage, getRooms } from '../integrations/ch
 import { listIssues as backlogListIssues, createIssue as backlogCreateIssue } from '../integrations/backlog';
 import { listAlerts as datadogListAlerts, getMetrics } from '../integrations/datadog';
 import { listIncidents } from '../integrations/pagerduty';
+import { generateImage, generateVideo, imageToVideo } from '../integrations/fal';
 
 // ──────────────────────────────────────────────
 // ツール定義 (OpenAI function_call / Anthropic tool format)
@@ -341,6 +342,35 @@ export function getAvailableTools(): ToolDefinition[] {
     });
   }
 
+  if (isAvailable('FAL_KEY')) {
+    tools.push({
+      name: 'generate_image',
+      description: '画像をAIで生成する。ランディングページ用ビジュアル、バナー、アイコン、イラストなど。ユーザーが「画像を作って」「イメージを生成して」「絵を描いて」と言ったら使う。',
+      parameters: {
+        type: 'object',
+        properties: {
+          prompt: { type: 'string', description: '生成したい画像の詳細な説明（英語推奨）' },
+          aspect_ratio: { type: 'string', description: 'アスペクト比', enum: ['1:1', '16:9', '9:16', '4:3'] },
+        },
+        required: ['prompt'],
+      },
+    });
+    tools.push({
+      name: 'generate_video',
+      description: '動画をAIで生成する。宣伝動画、プロモーション映像、SNS用動画など。ユーザーが「動画を作って」「映像を生成して」と言ったら使う。',
+      parameters: {
+        type: 'object',
+        properties: {
+          prompt: { type: 'string', description: '生成したい動画の詳細な説明（英語推奨）' },
+          duration: { type: 'number', description: '動画の長さ（秒）: 5 または 10', enum: ['5', '10'] },
+          aspect_ratio: { type: 'string', description: 'アスペクト比', enum: ['16:9', '9:16', '1:1'] },
+          image_url: { type: 'string', description: 'この画像URLを動画に変換する場合に指定（省略可）' },
+        },
+        required: ['prompt'],
+      },
+    });
+  }
+
   return tools;
 }
 
@@ -605,6 +635,30 @@ export async function executeToolCall(
           (i) => `• **${i.title}** [${i.status}]\n  🔗 ${i.html_url}`
         );
         return `🚨 PagerDuty Incidents (${incidents.length}件):\n\n${lines.join('\n\n')}`;
+      }
+
+      // ── fal.ai ──
+      case 'generate_image': {
+        const imgResult = await generateImage(
+          args.prompt as string,
+          (args.aspect_ratio as '1:1' | '16:9' | '9:16' | '4:3') ?? '1:1'
+        );
+        return `🎨 **画像を生成しました！**\n🔗 ${imgResult.url}\n\n> DiscordのDMや直接URLを開いて確認してください。\n> サイズ: ${imgResult.width}×${imgResult.height}`;
+      }
+      case 'generate_video': {
+        const isImg2Vid = Boolean(args.image_url);
+        const vidResult = isImg2Vid
+          ? await imageToVideo(
+              args.image_url as string,
+              args.prompt as string,
+              (args.duration as 5 | 10) ?? 5
+            )
+          : await generateVideo(
+              args.prompt as string,
+              (args.duration as 5 | 10) ?? 5,
+              (args.aspect_ratio as '16:9' | '9:16' | '1:1') ?? '16:9'
+            );
+        return `🎬 **動画を生成しました！**\n🔗 ${vidResult.url}\n\n> URLをブラウザで開くか、ダウンロードしてください。\n> 長さ: ${vidResult.duration}秒`;
       }
 
       default:

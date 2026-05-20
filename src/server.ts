@@ -1384,6 +1384,7 @@ function getIntegrationsDashboardHtml(): string {
         design: [
           { key: 'canva',     name: 'Canva',            logo: 'https://api.iconify.design/simple-icons:canva.svg?color=white',   type: 'Design Tool', invert: false },
           { key: 'figma',     name: 'Figma',            logo: SI+'/figma/ffffff',         type: 'UI Design', invert: false },
+          { key: 'fal',       name: 'fal.ai',           logo: 'https://api.iconify.design/simple-icons:falDotAi.svg?color=white', type: 'AI Image & Video (FLUX / Kling)', invert: false },
         ],
       };
 
@@ -2511,9 +2512,10 @@ export function startApiServer(): http.Server {
           hubspot: Boolean(process.env.HUBSPOT_ACCESS_TOKEN?.trim()),
           vercel: Boolean(process.env.VERCEL_TOKEN?.trim()),
           fireflies: Boolean(process.env.FIREFLIES_API_KEY?.trim()),
-          canva: Boolean(process.env.CANVA_CLIENT_ID?.trim()),
-          figma: Boolean(process.env.FIGMA_ACCESS_TOKEN?.trim()),
-        };
+  canva:      Boolean(process.env.CANVA_CLIENT_ID?.trim()),
+  figma:      Boolean(process.env.FIGMA_ACCESS_TOKEN?.trim()),
+  fal:        Boolean(process.env.FAL_KEY?.trim()),
+};
         sendJson(res, 200, status);
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error';
