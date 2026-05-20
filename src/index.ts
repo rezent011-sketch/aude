@@ -20,6 +20,14 @@ const client = new Client({
   partials: [Partials.Channel, Partials.Message, Partials.User],
 });
 
+// プロセスクラッシュ防止 — 未処理エラーをキャッチしてログに残す
+process.on('uncaughtException', (err) => {
+  console.error('[UNCAUGHT EXCEPTION]', err);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[UNHANDLED REJECTION]', reason);
+});
+
 // Attach a commands collection to the client
 (client as any).commands = new Collection();
 
