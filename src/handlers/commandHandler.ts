@@ -31,6 +31,8 @@ import { alertCommand } from '../commands/alert';
 import { vaultCommand } from '../commands/vault';
 import { chatworkCommand } from '../commands/chatwork';
 import { zoomCommand } from '../commands/zoom';
+import { pagerdutyCommand } from '../commands/pagerduty';
+import { datadogCommand } from '../commands/datadog';
 import {
   aiCommand,
   canvaCommand,
@@ -91,6 +93,8 @@ const commands: Command[] = [
   alertCommand,
   chatworkCommand,
   zoomCommand,
+  pagerdutyCommand,
+  datadogCommand,
   vaultCommand,
 ];
 
