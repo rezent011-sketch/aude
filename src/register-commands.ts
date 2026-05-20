@@ -4,7 +4,7 @@ import { registerCommandsToDiscord } from './handlers/commandHandler';
 
 registerCommandsToDiscord()
   .then(() => {
-    console.log('Done! Slash commands registered, including PagerDuty and Datadog.');
+    console.log('Done! Slash commands registered, including kintone and Freee.');
     process.exit(0);
   })
   .catch((error) => {

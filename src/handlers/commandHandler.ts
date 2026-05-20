@@ -33,6 +33,8 @@ import { chatworkCommand } from '../commands/chatwork';
 import { zoomCommand } from '../commands/zoom';
 import { pagerdutyCommand } from '../commands/pagerduty';
 import { datadogCommand } from '../commands/datadog';
+import { freeeCommand } from '../commands/freee';
+import { kintoneCommand } from '../commands/kintone';
 import {
   aiCommand,
   canvaCommand,
@@ -95,6 +97,8 @@ const commands: Command[] = [
   zoomCommand,
   pagerdutyCommand,
   datadogCommand,
+  kintoneCommand,
+  freeeCommand,
   vaultCommand,
 ];
 
