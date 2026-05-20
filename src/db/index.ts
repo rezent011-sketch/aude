@@ -130,6 +130,23 @@ db.exec(`
 `);
 
 db.exec(`
+  CREATE TABLE IF NOT EXISTS plugins (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    guild_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    trigger TEXT NOT NULL,
+    trigger_type TEXT NOT NULL DEFAULT 'command',
+    response TEXT NOT NULL,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_by_discord_id TEXT NOT NULL DEFAULT '',
+    created_by_username TEXT NOT NULL DEFAULT '',
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(guild_id, name)
+  );
+`);
+
+db.exec(`
   CREATE TRIGGER IF NOT EXISTS users_set_updated_at
   AFTER UPDATE ON users
   FOR EACH ROW
@@ -157,6 +174,36 @@ db.exec(`
   FOR EACH ROW
   BEGIN
     UPDATE model_preferences
+    SET updated_at = CURRENT_TIMESTAMP
+    WHERE id = NEW.id;
+  END;
+`);
+
+// Week13: AIメモリシステム
+db.exec(`
+  CREATE TABLE IF NOT EXISTS user_memories (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    discord_id TEXT NOT NULL,
+    memory_type TEXT NOT NULL CHECK(memory_type IN ('preference', 'fact', 'skill', 'context')),
+    content TEXT NOT NULL,
+    source TEXT NOT NULL DEFAULT 'auto',
+    importance INTEGER NOT NULL DEFAULT 1 CHECK(importance BETWEEN 1 AND 5),
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
+`);
+
+db.exec(`
+  CREATE INDEX IF NOT EXISTS idx_user_memories_discord_id
+  ON user_memories(discord_id);
+`);
+
+db.exec(`
+  CREATE TRIGGER IF NOT EXISTS user_memories_set_updated_at
+  AFTER UPDATE ON user_memories
+  FOR EACH ROW
+  BEGIN
+    UPDATE user_memories
     SET updated_at = CURRENT_TIMESTAMP
     WHERE id = NEW.id;
   END;

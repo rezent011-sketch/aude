@@ -17,6 +17,7 @@ import { githubCommand } from '../commands/github';
 import { pendingCommand } from '../commands/pending';
 import { configCommand } from '../commands/config';
 import { analyticsCommand } from '../commands/analytics';
+import { memoryCommand } from '../commands/memory';
 import {
   aiCommand,
   canvaCommand,
@@ -64,6 +65,7 @@ const commands: Command[] = [
   aiCommand,
   configCommand,
   analyticsCommand,
+  memoryCommand,
 ];
 
 export async function loadCommands(client: Client): Promise<void> {

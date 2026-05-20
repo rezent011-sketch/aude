@@ -10,6 +10,7 @@ import UserRepository from '../db/userRepository';
 import GuildRepository from '../db/guildRepository';
 import { ModelChoice, resolveModelChoice, routeToLLM } from '../llm/router';
 import { replyToMessageWithError } from '../utils/errorHandler';
+import { buildMemoryContext, extractMemoriesFromConversation } from '../services/memoryService';
 
 export async function handleMessage(message: Message, client: Client): Promise<void> {
   if (message.author.bot) {
@@ -57,6 +58,16 @@ export async function handleMessage(message: Message, client: Client): Promise<v
     const history = await conversationHistory.getRecent(channelId);
     const messages = [...history, { role: 'user' as const, content: prompt }];
 
+    // Week13: メモリコンテキストをAIに注入
+    const memoryContext = buildMemoryContext(discordId);
+
+    // ユーザー発言からメモリを自動抽出（バックグラウンド処理）
+    try {
+      extractMemoriesFromConversation(discordId, prompt);
+    } catch (memErr) {
+      console.warn('[Memory] Auto-extract failed:', memErr);
+    }
+
     if ('sendTyping' in message.channel) {
       await message.channel.sendTyping();
     }
@@ -64,7 +75,7 @@ export async function handleMessage(message: Message, client: Client): Promise<v
     creditsManager.consume(discordId, username, selectedModel);
     creditsCharged = true;
 
-    const result = await routeToLLM(prompt, selectedModel, messages, channelId);
+    const result = await routeToLLM(prompt, selectedModel, messages, channelId, memoryContext || undefined);
 
     await conversationHistory.append(channelId, user.id, 'user', prompt);
     await conversationHistory.append(channelId, user.id, 'assistant', result);

@@ -20,10 +20,6 @@ function isDiscordApiError(error: unknown): error is DiscordAPIError {
 
 export function getUserFriendlyErrorMessage(error: unknown): string {
   if (!isDiscordApiError(error)) {
-    if (error instanceof Error && error.message.trim()) {
-      return error.message;
-    }
-
     return DEFAULT_ERROR_MESSAGE;
   }
 

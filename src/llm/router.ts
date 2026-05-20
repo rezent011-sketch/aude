@@ -71,13 +71,18 @@ const SYSTEM_PROMPT = `You are Aude, an autonomous AI coworker that lives in Dis
 You help users with research, coding, content creation, and automation tasks.
 Be concise, actionable, and get straight to results. Format responses with Discord markdown.`;
 
-async function callClaude(messages: LLMMessage[]): Promise<string> {
+function buildSystemPrompt(memoryContext?: string): string {
+  if (!memoryContext) return SYSTEM_PROMPT;
+  return `${SYSTEM_PROMPT}\n${memoryContext}`;
+}
+
+async function callClaude(messages: LLMMessage[], systemPrompt?: string): Promise<string> {
   const client = getAnthropicClient();
 
   const response = await client.messages.create({
     model: 'claude-opus-4-5',
     max_tokens: 4096,
-    system: SYSTEM_PROMPT,
+    system: buildSystemPrompt(systemPrompt),
     messages,
   });
 
@@ -89,14 +94,14 @@ async function callClaude(messages: LLMMessage[]): Promise<string> {
   return textBlock.text;
 }
 
-async function callGPT4o(messages: LLMMessage[]): Promise<string> {
+async function callGPT4o(messages: LLMMessage[], systemPrompt?: string): Promise<string> {
   const client = getOpenAIClient();
 
   const response = await client.chat.completions.create({
     model: 'gpt-4o',
     max_tokens: 4096,
     messages: [
-      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'system', content: buildSystemPrompt(systemPrompt) },
       ...messages,
     ],
   });
@@ -108,7 +113,8 @@ export async function routeToLLM(
   prompt: string,
   preference: ModelChoice = 'auto',
   messages?: LLMMessage[],
-  channelId?: string
+  channelId?: string,
+  memoryContext?: string
 ): Promise<string> {
   const selected = resolveModelChoice(prompt, preference, channelId);
   const messagePayload = messages ?? [{ role: 'user', content: prompt }];
@@ -117,14 +123,14 @@ export async function routeToLLM(
 
   try {
     return selected === 'claude'
-      ? await callClaude(messagePayload)
-      : await callGPT4o(messagePayload);
+      ? await callClaude(messagePayload, memoryContext)
+      : await callGPT4o(messagePayload, memoryContext);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.warn(`[LLM] ${selected} failed, falling back...`, message);
 
     return selected === 'claude'
-      ? await callGPT4o(messagePayload)
-      : await callClaude(messagePayload);
+      ? await callGPT4o(messagePayload, memoryContext)
+      : await callClaude(messagePayload, memoryContext);
   }
 }
