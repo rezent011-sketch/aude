@@ -6,12 +6,26 @@ import SubscriptionRepository from '../db/subscriptionRepository';
 import { getPlanLabelJa } from '../stripe/plans';
 import { createTempFilePath, deleteTempFile } from '../files/tempFiles';
 import { generatePdf } from '../files/pdfGenerator';
+import { generateExcel } from '../files/excelGenerator';
+import { generatePptx } from '../files/pptGenerator';
 
-export type ExportFormat = 'pdf' | 'txt';
+export type ExportFormat = 'pdf' | 'txt' | 'excel' | 'pptx';
+export type ConversationExportFormat = Extract<ExportFormat, 'pdf' | 'txt'>;
 
 export interface GeneratedFile {
   name: string;
   path: string;
+}
+
+export interface ExcelExportData {
+  title: string;
+  headers: string[];
+  rows: string[][];
+}
+
+export interface PptxExportData {
+  title: string;
+  slides: Array<{ heading: string; bullets: string[] }>;
 }
 
 function formatDateTime(value: string | null): string {
@@ -51,7 +65,7 @@ function formatConversationText(
 
 export async function generateConversationExport(
   channelId: string,
-  format: ExportFormat
+  format: ConversationExportFormat
 ): Promise<GeneratedFile | null> {
   const messages = await getMessagesByChannel(channelId);
 
@@ -88,6 +102,44 @@ export async function generateConversationExport(
     await deleteTempFile(filePath);
     throw error;
   }
+}
+
+export async function generateExcelExport(data: ExcelExportData): Promise<GeneratedFile> {
+  const filePath = await createTempFilePath(`conversation-${sanitizeFileToken(data.title)}`, 'xlsx');
+
+  try {
+    await generateExcel({
+      ...data,
+      outputPath: filePath,
+    });
+  } catch (error) {
+    await deleteTempFile(filePath);
+    throw error;
+  }
+
+  return {
+    name: path.basename(filePath),
+    path: filePath,
+  };
+}
+
+export async function generatePptxExport(data: PptxExportData): Promise<GeneratedFile> {
+  const filePath = await createTempFilePath(`conversation-${sanitizeFileToken(data.title)}`, 'pptx');
+
+  try {
+    await generatePptx({
+      ...data,
+      outputPath: filePath,
+    });
+  } catch (error) {
+    await deleteTempFile(filePath);
+    throw error;
+  }
+
+  return {
+    name: path.basename(filePath),
+    path: filePath,
+  };
 }
 
 export async function generateUsageReport(
