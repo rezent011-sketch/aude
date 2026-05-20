@@ -79,6 +79,29 @@ db.exec(`
 `);
 
 db.exec(`
+  CREATE TABLE IF NOT EXISTS alerts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    guild_id TEXT NOT NULL,
+    channel_id TEXT NOT NULL,
+    created_by TEXT NOT NULL,
+    alert_type TEXT CHECK(alert_type IN ('keyword','schedule','threshold','reminder')) NOT NULL,
+    name TEXT NOT NULL,
+    condition TEXT NOT NULL,
+    cron_expr TEXT,
+    message TEXT NOT NULL,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    last_triggered TEXT,
+    trigger_count INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
+`);
+
+db.exec(`
+  CREATE INDEX IF NOT EXISTS idx_alerts_guild
+  ON alerts(guild_id);
+`);
+
+db.exec(`
   CREATE TABLE IF NOT EXISTS approvals (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
