@@ -399,9 +399,17 @@ function getLandingPageHtml(): string {
         padding: 24px 0;
       }
       .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
         font-size: 1.15rem;
         font-weight: 800;
         letter-spacing: 0.08em;
+      }
+      .brand img {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
       }
       .nav-links {
         display: flex;
@@ -604,7 +612,7 @@ function getLandingPageHtml(): string {
   <body>
     <div class="shell">
       <header class="nav">
-        <div class="brand">AUDE AI</div>
+        <div class="brand"><img src="https://cdn.discordapp.com/avatars/1505367333282119731/b5d0b21b40f7bd29ee0c008b8f6be16b.png" alt="Aude AI" />AUDE AI</div>
         <nav class="nav-links">
           <a href="#features">機能</a>
           <a href="#pricing">料金</a>
@@ -732,10 +740,18 @@ function getUserDashboardHtml(session: SessionRecord): string {
         background: rgba(11, 18, 32, 0.72);
       }
       .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
         font-size: 1.25rem;
         font-weight: 800;
         letter-spacing: 0.08em;
         margin-bottom: 28px;
+      }
+      .brand img {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
       }
       .nav {
         display: grid;
@@ -932,7 +948,7 @@ function getUserDashboardHtml(session: SessionRecord): string {
   <body>
     <div class="layout">
       <aside>
-        <div class="brand">AUDE AI</div>
+        <div class="brand"><img src="https://cdn.discordapp.com/avatars/1505367333282119731/b5d0b21b40f7bd29ee0c008b8f6be16b.png" alt="Aude AI" />AUDE AI</div>
         <nav class="nav">
           <a class="active" href="/dashboard">ホーム</a>
           <a href="/integrations">連携設定</a>
@@ -1331,54 +1347,58 @@ function getIntegrationsDashboardHtml(): string {
       </nav>
       <p class="subtitle">外部ツール・APIキーの設定状況です。未設定の場合は .env に追加してください。</p>
 
-      <div class="section-title">🤖 AI Models</div>
+      <div class="section-title">AI Models</div>
       <div id="ai-grid" class="grid"><div class="loading">Loading...</div></div>
 
-      <div class="section-title">💳 Billing</div>
+      <div class="section-title">Billing</div>
       <div id="billing-grid" class="grid"><div class="loading">Loading...</div></div>
 
-      <div class="section-title">🔧 Productivity</div>
+      <div class="section-title">Productivity</div>
       <div id="productivity-grid" class="grid"><div class="loading">Loading...</div></div>
 
-      <div class="section-title">🎨 Design & Media</div>
+      <div class="section-title">Design & Media</div>
       <div id="design-grid" class="grid"><div class="loading">Loading...</div></div>
     </div>
     <script>
-      const INTEGRATIONS = {
+      // Simple Icons CDN base URL
+      var SI = 'https://cdn.simpleicons.org';
+      var SI2 = 'https://unpkg.com/simple-icons@16.20.0/icons';
+
+      var INTEGRATIONS = {
         ai: [
-          { key: 'openai', name: 'OpenAI', icon: '🧠', type: 'AI Model (GPT-4o, gpt-5.4)' },
-          { key: 'anthropic', name: 'Anthropic', icon: '🤖', type: 'AI Model (Claude)' },
-          { key: 'gemini', name: 'Google Gemini', icon: '✨', type: 'AI Model (Gemini)' },
+          { key: 'openai',    name: 'OpenAI',          logo: 'https://api.iconify.design/simple-icons:openai.svg?color=white',  type: 'AI Model (GPT-4o, gpt-5.4)', invert: false },
+          { key: 'anthropic', name: 'Anthropic',        logo: SI+'/anthropic/ffffff',     type: 'AI Model (Claude)', invert: false },
+          { key: 'gemini',    name: 'Google Gemini',    logo: SI+'/googlegemini/ffffff',  type: 'AI Model (Gemini)', invert: false },
         ],
         billing: [
-          { key: 'stripe', name: 'Stripe', icon: '💳', type: 'Payment Processing' },
+          { key: 'stripe',    name: 'Stripe',           logo: SI+'/stripe/ffffff',        type: 'Payment Processing', invert: false },
         ],
         productivity: [
-          { key: 'notion', name: 'Notion', icon: '📝', type: 'Note-taking & Wiki' },
-          { key: 'github', name: 'GitHub', icon: '🐙', type: 'Code Repository' },
-          { key: 'google', name: 'Google Workspace', icon: '📧', type: 'Gmail / Calendar / Drive' },
-          { key: 'hubspot', name: 'HubSpot', icon: '🏢', type: 'CRM' },
-          { key: 'vercel', name: 'Vercel', icon: '▲', type: 'Deployment' },
-          { key: 'fireflies', name: 'Fireflies.ai', icon: '🔥', type: 'Meeting Transcription' },
+          { key: 'notion',    name: 'Notion',           logo: SI+'/notion/ffffff',        type: 'Note-taking & Wiki', invert: false },
+          { key: 'github',    name: 'GitHub',           logo: SI+'/github/ffffff',        type: 'Code Repository', invert: false },
+          { key: 'google',    name: 'Google Workspace', logo: SI+'/google/ffffff',        type: 'Gmail / Calendar / Drive', invert: false },
+          { key: 'hubspot',   name: 'HubSpot',          logo: SI+'/hubspot/ffffff',       type: 'CRM', invert: false },
+          { key: 'vercel',    name: 'Vercel',           logo: SI+'/vercel/ffffff',        type: 'Deployment', invert: false },
+          { key: 'fireflies', name: 'Fireflies.ai',     logo: SI+'/fireflyiii/ffffff',    type: 'Meeting Transcription', invert: false },
         ],
         design: [
-          { key: 'canva', name: 'Canva', icon: '🎨', type: 'Design Tool' },
-          { key: 'figma', name: 'Figma', icon: '🖼️', type: 'UI Design' },
+          { key: 'canva',     name: 'Canva',            logo: 'https://api.iconify.design/simple-icons:canva.svg?color=white',   type: 'Design Tool', invert: false },
+          { key: 'figma',     name: 'Figma',            logo: SI+'/figma/ffffff',         type: 'UI Design', invert: false },
         ],
       };
 
       function renderCards(containerId, items, status) {
-        const el = document.getElementById(containerId);
-        el.innerHTML = items.map(item => {
-          const ok = status[item.key];
-          return \`<div class="card">
-            <div class="card-icon">\${item.icon}</div>
-            <div class="card-info">
-              <div class="card-name">\${item.name}</div>
-              <div class="card-type">\${item.type}</div>
-              <span class="badge \${ok ? 'ok' : 'ng'}">\${ok ? '設定済み' : '未設定'}</span>
-            </div>
-          </div>\`;
+        var el = document.getElementById(containerId);
+        el.innerHTML = items.map(function(item) {
+          var ok = status[item.key];
+          var imgStyle = 'width:28px;height:28px;object-fit:contain;' + (item.invert ? 'filter:invert(1);' : '');
+          return '<div class="card">'
+            + '<div class="card-icon"><img src="' + item.logo + '" alt="' + item.name + '" style="' + imgStyle + '" /></div>'
+            + '<div class="card-info">'
+            + '<div class="card-name">' + item.name + '</div>'
+            + '<div class="card-type">' + item.type + '</div>'
+            + '<span class="badge ' + (ok ? 'ok' : 'ng') + '">' + (ok ? '設定済み' : '未設定') + '</span>'
+            + '</div></div>';
         }).join('');
       }
 
@@ -2287,6 +2307,50 @@ export function startApiServer(): http.Server {
       const auth = getSession(req);
       clearSession(res, auth?.sessionId);
       redirect(res, '/');
+      return;
+    }
+
+    // Google OAuth2 callback — exchange code for refresh token
+    if (method === 'GET' && url.pathname === '/auth/google/callback') {
+      const code = url.searchParams.get('code');
+      if (!code) {
+        sendHtml(res, 400, '<h1>Error: no code parameter</h1>');
+        return;
+      }
+      try {
+        const clientId = process.env.GOOGLE_CLIENT_ID?.trim() || '';
+        const clientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim() || '';
+        const redirectUri = 'http://localhost:3001/auth/google/callback';
+        const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            code,
+            client_id: clientId,
+            client_secret: clientSecret,
+            redirect_uri: redirectUri,
+            grant_type: 'authorization_code',
+          }).toString(),
+        });
+        const tokenData = await tokenRes.json() as { refresh_token?: string; access_token?: string; error?: string };
+        if (tokenData.error || !tokenData.refresh_token) {
+          sendHtml(res, 400, `<h1>Error</h1><pre>${JSON.stringify(tokenData, null, 2)}</pre>`);
+          return;
+        }
+        // Save refresh token to .env file (append/update)
+        const envPath = require('path').join(process.cwd(), '.env');
+        let envContent = require('fs').readFileSync(envPath, 'utf8');
+        if (envContent.includes('GOOGLE_REFRESH_TOKEN=')) {
+          envContent = envContent.replace(/GOOGLE_REFRESH_TOKEN=.*/, `GOOGLE_REFRESH_TOKEN=${tokenData.refresh_token}`);
+        } else {
+          envContent += `\nGOOGLE_REFRESH_TOKEN=${tokenData.refresh_token}\n`;
+        }
+        require('fs').writeFileSync(envPath, envContent);
+        process.env.GOOGLE_REFRESH_TOKEN = tokenData.refresh_token;
+        sendHtml(res, 200, `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{background:#0f1117;color:#e8eaf0;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;}</style></head><body><div style="text-align:center"><div style="font-size:3rem">✅</div><h1>Google Workspace 連携完了！</h1><p style="color:#8b8fa8">Refresh Tokenを保存しました。<br>このタブを閉じてください。</p></div></body></html>`);
+      } catch (e: any) {
+        sendHtml(res, 500, `<h1>Error</h1><pre>${e.message}</pre>`);
+      }
       return;
     }
 
