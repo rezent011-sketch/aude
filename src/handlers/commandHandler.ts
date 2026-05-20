@@ -19,6 +19,8 @@ import { gitlabCommand } from '../commands/gitlab';
 import { linearCommand } from '../commands/linear';
 import { jiraCommand } from '../commands/jira';
 import { backlogCommand } from '../commands/backlog';
+import { trelloCommand } from '../commands/trello';
+import { asanaCommand } from '../commands/asana';
 import { pendingCommand } from '../commands/pending';
 import { configCommand } from '../commands/config';
 import { analyticsCommand } from '../commands/analytics';
@@ -70,6 +72,8 @@ const commands: Command[] = [
   linearCommand,
   jiraCommand,
   backlogCommand,
+  trelloCommand,
+  asanaCommand,
   gmailCommand,
   sheetsCommand,
   driveCommand,
