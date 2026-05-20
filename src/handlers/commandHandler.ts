@@ -1,6 +1,7 @@
 // src/handlers/commandHandler.ts — Load and register slash commands
 import { Client, Collection, REST, Routes } from 'discord.js';
 import { taskCommand } from '../commands/task';
+import { jobCommand } from '../commands/job';
 import { approveTaskCommand } from '../commands/approveTask';
 import { researchCommand } from '../commands/research';
 import { createCommand } from '../commands/create';
@@ -44,6 +45,7 @@ export interface Command {
 
 const commands: Command[] = [
   taskCommand,
+  jobCommand,
   approveTaskCommand,
   pendingCommand,
   researchCommand,
