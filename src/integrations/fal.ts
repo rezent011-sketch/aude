@@ -55,7 +55,7 @@ export async function generateVideo(
 
   const durationStr = duration === 10 ? '10' as const : '5' as const;
 
-  const result = await falClient.subscribe('fal-ai/kling-video/v2.1/standard/text-to-video', {
+  const result = await falClient.subscribe('fal-ai/kling-video/v1.6/standard/text-to-video', {
     input: {
       prompt,
       duration: durationStr,
@@ -80,7 +80,7 @@ export async function imageToVideo(
 
   const durationStr = duration === 10 ? '10' as const : '5' as const;
 
-  const result = await falClient.subscribe('fal-ai/kling-video/v2.1/standard/image-to-video', {
+  const result = await falClient.subscribe('fal-ai/kling-video/v1.6/standard/image-to-video', {
     input: {
       image_url: imageUrl,
       prompt,
