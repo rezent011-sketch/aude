@@ -170,6 +170,24 @@ db.exec(`
 `);
 
 db.exec(`
+  CREATE TABLE IF NOT EXISTS vault_credentials (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    owner_id TEXT NOT NULL,
+    owner_type TEXT CHECK(owner_type IN ('user','guild')) NOT NULL,
+    key_name TEXT NOT NULL,
+    encrypted_value TEXT NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(owner_id, owner_type, key_name)
+  );
+`);
+
+db.exec(`
+  CREATE INDEX IF NOT EXISTS idx_vault_owner
+  ON vault_credentials(owner_id, owner_type);
+`);
+
+db.exec(`
   CREATE TRIGGER IF NOT EXISTS users_set_updated_at
   AFTER UPDATE ON users
   FOR EACH ROW
@@ -197,6 +215,17 @@ db.exec(`
   FOR EACH ROW
   BEGIN
     UPDATE model_preferences
+    SET updated_at = CURRENT_TIMESTAMP
+    WHERE id = NEW.id;
+  END;
+`);
+
+db.exec(`
+  CREATE TRIGGER IF NOT EXISTS vault_credentials_set_updated_at
+  AFTER UPDATE ON vault_credentials
+  FOR EACH ROW
+  BEGIN
+    UPDATE vault_credentials
     SET updated_at = CURRENT_TIMESTAMP
     WHERE id = NEW.id;
   END;

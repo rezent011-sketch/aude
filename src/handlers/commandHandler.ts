@@ -21,6 +21,7 @@ import { memoryCommand } from '../commands/memory';
 import { tmemoryCommand } from '../commands/tmemory';
 import { browseCommand } from '../commands/browse';
 import { alertCommand } from '../commands/alert';
+import { vaultCommand } from '../commands/vault';
 import {
   aiCommand,
   canvaCommand,
@@ -72,6 +73,7 @@ const commands: Command[] = [
   tmemoryCommand,
   browseCommand,
   alertCommand,
+  vaultCommand,
 ];
 
 export async function loadCommands(client: Client): Promise<void> {
