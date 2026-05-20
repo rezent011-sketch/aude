@@ -654,6 +654,7 @@ export async function executeToolCall(
         const vidRatio = (args.aspect_ratio as '16:9' | '9:16' | '1:1') ?? '16:9';
         const vidImageUrl = args.image_url as string | undefined;
         const channelId = args.channel_id as string | undefined;
+        console.log(`[Video] channelId=${channelId}, prompt=${vidPrompt.slice(0,50)}`);
 
         // 非同期で生成開始（awaitしない）
         const vidPromise = vidImageUrl

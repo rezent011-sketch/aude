@@ -53,21 +53,23 @@ export async function generateVideo(
 ): Promise<FalVideoResult> {
   configure();
 
-  const durationStr = duration === 10 ? '10' as const : '5' as const;
+  // LTX Video: num_frames で長さを指定（24fps × 5秒 = 121フレーム、10秒 = 241フレーム）
+  const numFrames = duration === 10 ? 241 : 121;
+  const [width, height] =
+    aspectRatio === '9:16' ? [512, 896]
+    : aspectRatio === '1:1' ? [704, 704]
+    : [704, 480]; // 16:9
 
-  const result = await falClient.subscribe('fal-ai/kling-video/v1.6/standard/text-to-video', {
-    input: {
-      prompt,
-      duration: durationStr,
-      aspect_ratio: aspectRatio,
-    },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const result = await falClient.subscribe('fal-ai/ltx-video', {
+    input: { prompt, num_frames: numFrames, width, height, fps: 24 } as any,
     logs: false,
     onQueueUpdate: () => { /* silent */ },
-  }) as unknown as { data: { video?: { url: string; duration?: number } } };
+  }) as unknown as { data: { video?: { url: string } } };
 
   const video = result.data?.video;
   if (!video?.url) throw new Error('動画の生成に失敗しました。');
-  return { url: video.url, duration: video.duration ?? duration };
+  return { url: video.url, duration };
 }
 
 // ── 画像→動画 (Kling v2.1 image→video) ──────────────────
@@ -78,19 +80,17 @@ export async function imageToVideo(
 ): Promise<FalVideoResult> {
   configure();
 
-  const durationStr = duration === 10 ? '10' as const : '5' as const;
+  // LTX Video image-to-video
+  const numFrames = duration === 10 ? 241 : 121;
 
-  const result = await falClient.subscribe('fal-ai/kling-video/v1.6/standard/image-to-video', {
-    input: {
-      image_url: imageUrl,
-      prompt,
-      duration: durationStr,
-    },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const result = await falClient.subscribe('fal-ai/ltx-video/image-to-video', {
+    input: { image_url: imageUrl, prompt, num_frames: numFrames, fps: 24 } as any,
     logs: false,
     onQueueUpdate: () => { /* silent */ },
-  }) as unknown as { data: { video?: { url: string; duration?: number } } };
+  }) as unknown as { data: { video?: { url: string } } };
 
   const video = result.data?.video;
   if (!video?.url) throw new Error('動画の生成に失敗しました。');
-  return { url: video.url, duration: video.duration ?? duration };
+  return { url: video.url, duration };
 }
