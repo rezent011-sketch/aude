@@ -2,7 +2,6 @@
 import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
-  AttachmentBuilder,
 } from 'discord.js';
 import { Command } from '../handlers/commandHandler';
 import { generateVideo, imageToVideo } from '../integrations/fal';
@@ -60,15 +59,12 @@ export const videoCommand: Command = {
         ? await imageToVideo(imageUrl, prompt, duration)
         : await generateVideo(prompt, duration, ratio);
 
-      // 動画URLをダウンロードしてDiscordに添付
-      const response = await fetch(result.url);
-      const buffer = Buffer.from(await response.arrayBuffer());
-      const attachment = new AttachmentBuilder(buffer, { name: 'generated.mp4' });
-
-      await interaction.editReply({
-        content: `🎬 **動画生成完了！**\n> ${prompt}\n\`${duration}秒 / ${ratio}\` | Kling v2.1`,
-        files: [attachment],
-      });
+      await interaction.editReply(
+        '🎬 **動画生成完了！**\n' +
+          '> ' + prompt + '\n' +
+          ' | Kling v2.1\n\n' +
+          '🔗 ' + result.url
+      );
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       await interaction.editReply(`❌ 動画生成に失敗しました: ${msg}`);
