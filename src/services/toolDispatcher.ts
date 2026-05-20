@@ -643,22 +643,27 @@ export async function executeToolCall(
           args.prompt as string,
           (args.aspect_ratio as '1:1' | '16:9' | '9:16' | '4:3') ?? '1:1'
         );
-        return `🎨 **画像を生成しました！**\n🔗 ${imgResult.url}\n\n> DiscordのDMや直接URLを開いて確認してください。\n> サイズ: ${imgResult.width}×${imgResult.height}`;
+        return `🎨 **画像を生成しました！**\n🔗 ${imgResult.url}\n\nサイズ: ${imgResult.width}×${imgResult.height}`;
       }
       case 'generate_video': {
-        const isImg2Vid = Boolean(args.image_url);
-        const vidResult = isImg2Vid
-          ? await imageToVideo(
-              args.image_url as string,
-              args.prompt as string,
-              (args.duration as 5 | 10) ?? 5
-            )
-          : await generateVideo(
-              args.prompt as string,
-              (args.duration as 5 | 10) ?? 5,
-              (args.aspect_ratio as '16:9' | '9:16' | '1:1') ?? '16:9'
-            );
-        return `🎬 **動画を生成しました！**\n🔗 ${vidResult.url}\n\n> URLをブラウザで開くか、ダウンロードしてください。\n> 長さ: ${vidResult.duration}秒`;
+        // 動画生成は時間がかかるため「生成開始」を即返し、バックグラウンドで処理
+        const vidPrompt = args.prompt as string;
+        const vidDuration = (args.duration as 5 | 10) ?? 5;
+        const vidRatio = (args.aspect_ratio as '16:9' | '9:16' | '1:1') ?? '16:9';
+        const vidImageUrl = args.image_url as string | undefined;
+
+        // 非同期で生成開始（awaitしない）
+        const vidPromise = vidImageUrl
+          ? imageToVideo(vidImageUrl, vidPrompt, vidDuration)
+          : generateVideo(vidPrompt, vidDuration, vidRatio);
+
+        vidPromise.then((result) => {
+          console.log(`[Tool] Video generation complete: ${result.url}`);
+        }).catch((err: Error) => {
+          console.error(`[Tool] Video generation failed: ${err.message}`);
+        });
+
+        return `🎬 **動画生成を開始しました！**\n\n⏳ Kling v2.1で生成中（約1〜2分）\n\n完了したら自動でお知らせします。\n\nプロンプト: ${vidPrompt.slice(0, 100)}`;
       }
 
       default:

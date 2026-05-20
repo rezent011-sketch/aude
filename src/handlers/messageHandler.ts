@@ -74,17 +74,29 @@ export async function handleMessage(message: Message, client: Client): Promise<v
       await message.channel.sendTyping();
     }
 
+    // sendTyping は3秒で切れるため、LLM処理中は定期的に更新する
+    const typingInterval = setInterval(() => {
+      if ('sendTyping' in message.channel) {
+        (message.channel as { sendTyping: () => void }).sendTyping();
+      }
+    }, 8000);
+
     creditsManager.consume(discordId, username, selectedModel);
     creditsCharged = true;
 
-    const result = await routeToLLM(
-      prompt,
-      selectedModel,
-      messages,
-      channelId,
-      memoryContext || undefined,
-      guildId ?? undefined
-    );
+    let result: string;
+    try {
+      result = await routeToLLM(
+        prompt,
+        selectedModel,
+        messages,
+        channelId,
+        memoryContext || undefined,
+        guildId ?? undefined
+      );
+    } finally {
+      clearInterval(typingInterval);
+    }
 
     await conversationHistory.append(channelId, user.id, 'user', prompt);
     await conversationHistory.append(channelId, user.id, 'assistant', result);
