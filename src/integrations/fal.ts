@@ -33,9 +33,9 @@ export async function generateImage(
       num_images: 1,
       enable_safety_checker: true,
     },
-  }) as unknown as { images: { url: string; width: number; height: number }[] };
+  }) as unknown as { data: { images: { url: string; width: number; height: number }[] } };
 
-  const img = result.images?.[0];
+  const img = result.data?.images?.[0];
   if (!img?.url) throw new Error('画像の生成に失敗しました。');
   return { url: img.url, width: img.width, height: img.height };
 }
