@@ -27,6 +27,8 @@ import { tmemoryCommand } from '../commands/tmemory';
 import { browseCommand } from '../commands/browse';
 import { alertCommand } from '../commands/alert';
 import { vaultCommand } from '../commands/vault';
+import { chatworkCommand } from '../commands/chatwork';
+import { zoomCommand } from '../commands/zoom';
 import {
   aiCommand,
   canvaCommand,
@@ -83,6 +85,8 @@ const commands: Command[] = [
   tmemoryCommand,
   browseCommand,
   alertCommand,
+  chatworkCommand,
+  zoomCommand,
   vaultCommand,
 ];
 
