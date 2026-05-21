@@ -46,6 +46,7 @@ import { zoomCommand } from '../commands/zoom';
 import { pagerdutyCommand } from '../commands/pagerduty';
 import { datadogCommand } from '../commands/datadog';
 import { freeeCommand } from '../commands/freee';
+import { freeehrCommand } from '../commands/freeehr';
 import { freeesignCommand } from '../commands/freeesign';
 import { gmoagreeCommand } from '../commands/gmoagree';
 import { kintoneCommand } from '../commands/kintone';
@@ -63,6 +64,8 @@ import { websiteCommand } from '../commands/website';
 import { kingofthymeCommand } from '../commands/kingofthyme';
 import { yayoiCommand } from '../commands/yayoi';
 import { wantedlyCommand } from '../commands/wantedly';
+import { receptionistCommand } from '../commands/receptionist';
+import { mfpayrollCommand } from '../commands/mfpayroll';
 import {
   aiCommand,
   canvaCommand,
@@ -140,6 +143,7 @@ const commands: Command[] = [
   kintoneCommand,
   lineworksCommand,
   freeeCommand,
+  freeehrCommand,
   freeesignCommand,
   gmoagreeCommand,
   smarthrCommand,
@@ -154,6 +158,8 @@ const commands: Command[] = [
   kingofthymeCommand,
   yayoiCommand,
   wantedlyCommand,
+  receptionistCommand,
+  mfpayrollCommand,
   videoCommand,
   websiteCommand,
 ];
