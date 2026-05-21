@@ -32,6 +32,9 @@ import { vaultCommand } from '../commands/vault';
 import { chatworkCommand } from '../commands/chatwork';
 import { moneyforwardCommand } from '../commands/moneyforward';
 import { slackCommand } from '../commands/slack';
+import { airtableCommand } from '../commands/airtable';
+import { mondayCommand } from '../commands/monday';
+import { clickupCommand } from '../commands/clickup';
 import { twilioCommand } from '../commands/twilio';
 import { sendgridCommand } from '../commands/sendgrid';
 import { zendeskCommand } from '../commands/zendesk';
@@ -133,6 +136,9 @@ const commands: Command[] = [
   chatworkCommand,
   moneyforwardCommand,
   slackCommand,
+  airtableCommand,
+  mondayCommand,
+  clickupCommand,
   twilioCommand,
   sendgridCommand,
   zendeskCommand,
