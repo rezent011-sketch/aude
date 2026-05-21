@@ -32,6 +32,10 @@ import { vaultCommand } from '../commands/vault';
 import { chatworkCommand } from '../commands/chatwork';
 import { moneyforwardCommand } from '../commands/moneyforward';
 import { slackCommand } from '../commands/slack';
+import { miroCommand } from '../commands/miro';
+import { loomCommand } from '../commands/loom';
+import { webflowCommand } from '../commands/webflow';
+import { stripebillingCommand } from '../commands/stripebilling';
 import { circleciCommand } from '../commands/circleci';
 import { awss3Command } from '../commands/awss3';
 import { calendlyCommand } from '../commands/calendly';
@@ -159,6 +163,9 @@ const commands: Command[] = [
   chatworkCommand,
   moneyforwardCommand,
   slackCommand,
+  miroCommand,
+  loomCommand,
+  webflowCommand,
   circleciCommand,
   awss3Command,
   cloudwatchCommand,
@@ -217,6 +224,7 @@ const commands: Command[] = [
   receptionistCommand,
   mfpayrollCommand,
   stripeapiCommand,
+  stripebillingCommand,
   typeformCommand,
   salesforceCommand,
   pipedriveCommand,
