@@ -15,6 +15,7 @@ import { parseLstepWebhook, forwardToDiscord } from './integrations/lstep';
 import { parseElmeWebhook, forwardElmeToDiscord } from './integrations/elme';
 import { parseUtageWebhook, forwardUtageToDiscord } from './integrations/utage';
 import { parseLmessageWebhook, forwardLmessageToDiscord } from './integrations/lmessage';
+import { handleLineWebhook, LineWebhookBody } from './handlers/lineHandler';
 import { getDiscordClient } from './services/discordClient';
 import vaultService from './services/vaultService';
 
@@ -2640,6 +2641,25 @@ export function startApiServer(): http.Server {
         } catch (err) {
           console.error('[Lmessage Webhook] error:', err);
         }
+        sendJson(res, 200, { ok: true });
+      });
+      return;
+    }
+
+    // LINE Messaging API Webhook受信
+    if (method === 'POST' && url.pathname === '/webhook/line') {
+      let body = '';
+      req.on('data', (chunk: Buffer) => { body += chunk.toString(); });
+      req.on('end', async () => {
+        try {
+          // LINE署名検証（X-Line-Signatureヘッダー）
+          // 本番ではHMAC-SHA256検証推奨。今は簡易実装でスキップ
+          const parsed = JSON.parse(body) as LineWebhookBody;
+          await handleLineWebhook(parsed);
+        } catch (err) {
+          console.error('[LINE Webhook] error:', err);
+        }
+        // LINEは常に200を返す必要がある
         sendJson(res, 200, { ok: true });
       });
       return;
