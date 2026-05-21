@@ -32,6 +32,8 @@ import { vaultCommand } from '../commands/vault';
 import { chatworkCommand } from '../commands/chatwork';
 import { moneyforwardCommand } from '../commands/moneyforward';
 import { slackCommand } from '../commands/slack';
+import { twilioCommand } from '../commands/twilio';
+import { sendgridCommand } from '../commands/sendgrid';
 import { zendeskCommand } from '../commands/zendesk';
 import { intercomCommand } from '../commands/intercom';
 import { freshdeskCommand } from '../commands/freshdesk';
@@ -69,6 +71,7 @@ import { yayoiCommand } from '../commands/yayoi';
 import { wantedlyCommand } from '../commands/wantedly';
 import { receptionistCommand } from '../commands/receptionist';
 import { mfpayrollCommand } from '../commands/mfpayroll';
+import { stripeapiCommand } from '../commands/stripeapi';
 import {
   aiCommand,
   canvaCommand,
@@ -130,6 +133,8 @@ const commands: Command[] = [
   chatworkCommand,
   moneyforwardCommand,
   slackCommand,
+  twilioCommand,
+  sendgridCommand,
   zendeskCommand,
   intercomCommand,
   freshdeskCommand,
@@ -166,6 +171,7 @@ const commands: Command[] = [
   wantedlyCommand,
   receptionistCommand,
   mfpayrollCommand,
+  stripeapiCommand,
   videoCommand,
   websiteCommand,
 ];
