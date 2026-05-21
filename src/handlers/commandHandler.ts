@@ -84,6 +84,11 @@ import { cloudflareCommand } from '../commands/cloudflare';
 import { herokuCommand } from '../commands/heroku';
 import { launchdarklyCommand } from '../commands/launchdarkly';
 import { statuspageCommand } from '../commands/statuspage';
+import { codaCommand } from '../commands/coda';
+import { retoolCommand } from '../commands/retool';
+import { zapierCommand } from '../commands/zapier';
+import { makeCommand } from '../commands/make';
+import { n8nCommand } from '../commands/n8n';
 import { freeeCommand } from '../commands/freee';
 import { freeehrCommand } from '../commands/freeehr';
 import { freeesignCommand } from '../commands/freeesign';
@@ -223,6 +228,11 @@ const commands: Command[] = [
   herokuCommand,
   launchdarklyCommand,
   statuspageCommand,
+  codaCommand,
+  retoolCommand,
+  zapierCommand,
+  makeCommand,
+  n8nCommand,
   kintoneCommand,
   lineworksCommand,
   freeeCommand,
