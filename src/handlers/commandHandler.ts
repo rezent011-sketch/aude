@@ -32,6 +32,9 @@ import { vaultCommand } from '../commands/vault';
 import { chatworkCommand } from '../commands/chatwork';
 import { moneyforwardCommand } from '../commands/moneyforward';
 import { slackCommand } from '../commands/slack';
+import { jobcanCommand } from '../commands/jobcan';
+import { cybozuCommand } from '../commands/cybozu';
+import { talentioCommand } from '../commands/talentio';
 import { sansanCommand } from '../commands/sansan';
 import { zoomCommand } from '../commands/zoom';
 import { pagerdutyCommand } from '../commands/pagerduty';
@@ -109,6 +112,9 @@ const commands: Command[] = [
   chatworkCommand,
   moneyforwardCommand,
   slackCommand,
+  jobcanCommand,
+  cybozuCommand,
+  talentioCommand,
   sansanCommand,
   zoomCommand,
   pagerdutyCommand,
