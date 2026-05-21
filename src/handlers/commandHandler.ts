@@ -32,6 +32,9 @@ import { vaultCommand } from '../commands/vault';
 import { chatworkCommand } from '../commands/chatwork';
 import { moneyforwardCommand } from '../commands/moneyforward';
 import { slackCommand } from '../commands/slack';
+import { zendeskCommand } from '../commands/zendesk';
+import { intercomCommand } from '../commands/intercom';
+import { freshdeskCommand } from '../commands/freshdesk';
 import { storesCommand } from '../commands/stores';
 import { baseCommand } from '../commands/base';
 import { shopifyCommand } from '../commands/shopify';
@@ -127,6 +130,9 @@ const commands: Command[] = [
   chatworkCommand,
   moneyforwardCommand,
   slackCommand,
+  zendeskCommand,
+  intercomCommand,
+  freshdeskCommand,
   storesCommand,
   baseCommand,
   shopifyCommand,
