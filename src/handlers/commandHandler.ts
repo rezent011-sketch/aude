@@ -44,10 +44,13 @@ import { zoomCommand } from '../commands/zoom';
 import { pagerdutyCommand } from '../commands/pagerduty';
 import { datadogCommand } from '../commands/datadog';
 import { freeeCommand } from '../commands/freee';
+import { freeesignCommand } from '../commands/freeesign';
+import { gmoagreeCommand } from '../commands/gmoagree';
 import { kintoneCommand } from '../commands/kintone';
 import { lineworksCommand } from '../commands/lineworks';
 import { imageCommand } from '../commands/image';
 import { lineCommand } from '../commands/line';
+import { rakumoCommand } from '../commands/rakumo';
 import { lstepCommand } from '../commands/lstep';
 import { elmeCommand } from '../commands/elme';
 import { utageCommand } from '../commands/utage';
@@ -132,10 +135,13 @@ const commands: Command[] = [
   kintoneCommand,
   lineworksCommand,
   freeeCommand,
+  freeesignCommand,
+  gmoagreeCommand,
   smarthrCommand,
   vaultCommand,
   imageCommand,
   lineCommand,
+  rakumoCommand,
   lstepCommand,
   elmeCommand,
   utageCommand,
