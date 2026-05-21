@@ -36,6 +36,11 @@ import { miroCommand } from '../commands/miro';
 import { loomCommand } from '../commands/loom';
 import { webflowCommand } from '../commands/webflow';
 import { stripebillingCommand } from '../commands/stripebilling';
+import { amplitudeCommand } from '../commands/amplitude';
+import { mixpanelCommand } from '../commands/mixpanel';
+import { segmentCommand } from '../commands/segment';
+import { postmarkCommand } from '../commands/postmark';
+import { vonageCommand } from '../commands/vonage';
 import { circleciCommand } from '../commands/circleci';
 import { awss3Command } from '../commands/awss3';
 import { calendlyCommand } from '../commands/calendly';
@@ -166,6 +171,11 @@ const commands: Command[] = [
   miroCommand,
   loomCommand,
   webflowCommand,
+  amplitudeCommand,
+  mixpanelCommand,
+  segmentCommand,
+  postmarkCommand,
+  vonageCommand,
   circleciCommand,
   awss3Command,
   cloudwatchCommand,
