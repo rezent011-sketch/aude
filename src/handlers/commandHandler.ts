@@ -32,6 +32,7 @@ import { vaultCommand } from '../commands/vault';
 import { chatworkCommand } from '../commands/chatwork';
 import { moneyforwardCommand } from '../commands/moneyforward';
 import { slackCommand } from '../commands/slack';
+import { cloudsignCommand } from '../commands/cloudsign';
 import { jobcanCommand } from '../commands/jobcan';
 import { cybozuCommand } from '../commands/cybozu';
 import { talentioCommand } from '../commands/talentio';
@@ -51,6 +52,8 @@ import { lmessageCommand } from '../commands/lmessage';
 import { smarthrCommand } from '../commands/smarthr';
 import { videoCommand } from '../commands/video';
 import { websiteCommand } from '../commands/website';
+import { kingofthymeCommand } from '../commands/kingofthyme';
+import { yayoiCommand } from '../commands/yayoi';
 import {
   aiCommand,
   canvaCommand,
@@ -112,6 +115,7 @@ const commands: Command[] = [
   chatworkCommand,
   moneyforwardCommand,
   slackCommand,
+  cloudsignCommand,
   jobcanCommand,
   cybozuCommand,
   talentioCommand,
@@ -130,6 +134,8 @@ const commands: Command[] = [
   elmeCommand,
   utageCommand,
   lmessageCommand,
+  kingofthymeCommand,
+  yayoiCommand,
   videoCommand,
   websiteCommand,
 ];
