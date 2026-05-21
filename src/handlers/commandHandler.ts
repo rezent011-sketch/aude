@@ -32,7 +32,10 @@ import { vaultCommand } from '../commands/vault';
 import { chatworkCommand } from '../commands/chatwork';
 import { moneyforwardCommand } from '../commands/moneyforward';
 import { slackCommand } from '../commands/slack';
+import { googleanalyticsCommand } from '../commands/googleanalytics';
+import { metaadsCommand } from '../commands/metaads';
 import { teamsCommand } from '../commands/teams';
+import { tiktokadsCommand } from '../commands/tiktokads';
 import { outlookCommand } from '../commands/outlook';
 import { onedriveCommand } from '../commands/onedrive';
 import { boxCommand } from '../commands/box';
@@ -145,6 +148,8 @@ const commands: Command[] = [
   chatworkCommand,
   moneyforwardCommand,
   slackCommand,
+  googleanalyticsCommand,
+  metaadsCommand,
   teamsCommand,
   outlookCommand,
   onedriveCommand,
@@ -196,6 +201,7 @@ const commands: Command[] = [
   salesforceCommand,
   pipedriveCommand,
   activecampaignCommand,
+  tiktokadsCommand,
   videoCommand,
   websiteCommand,
 ];
