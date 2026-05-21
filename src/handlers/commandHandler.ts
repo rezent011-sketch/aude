@@ -32,8 +32,12 @@ import { vaultCommand } from '../commands/vault';
 import { chatworkCommand } from '../commands/chatwork';
 import { moneyforwardCommand } from '../commands/moneyforward';
 import { slackCommand } from '../commands/slack';
+import { awss3Command } from '../commands/awss3';
 import { calendlyCommand } from '../commands/calendly';
+import { cloudwatchCommand } from '../commands/cloudwatch';
 import { googleanalyticsCommand } from '../commands/googleanalytics';
+import { githubactionsCommand } from '../commands/githubactions';
+import { mailchimpCommand } from '../commands/mailchimp';
 import { metaadsCommand } from '../commands/metaads';
 import { teamsCommand } from '../commands/teams';
 import { tiktokadsCommand } from '../commands/tiktokads';
@@ -151,8 +155,12 @@ const commands: Command[] = [
   chatworkCommand,
   moneyforwardCommand,
   slackCommand,
+  awss3Command,
+  cloudwatchCommand,
   calendlyCommand,
   googleanalyticsCommand,
+  githubactionsCommand,
+  mailchimpCommand,
   metaadsCommand,
   teamsCommand,
   outlookCommand,
