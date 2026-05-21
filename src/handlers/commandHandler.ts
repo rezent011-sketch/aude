@@ -32,6 +32,7 @@ import { vaultCommand } from '../commands/vault';
 import { chatworkCommand } from '../commands/chatwork';
 import { moneyforwardCommand } from '../commands/moneyforward';
 import { slackCommand } from '../commands/slack';
+import { figmafilesCommand } from '../commands/figmafiles';
 import { miroCommand } from '../commands/miro';
 import { loomCommand } from '../commands/loom';
 import { webflowCommand } from '../commands/webflow';
@@ -65,6 +66,7 @@ import { sendgridCommand } from '../commands/sendgrid';
 import { zendeskCommand } from '../commands/zendesk';
 import { intercomCommand } from '../commands/intercom';
 import { freshdeskCommand } from '../commands/freshdesk';
+import { hubspotcrmCommand } from '../commands/hubspotcrm';
 import { storesCommand } from '../commands/stores';
 import { baseCommand } from '../commands/base';
 import { shopifyCommand } from '../commands/shopify';
@@ -117,6 +119,10 @@ import { pipedriveCommand } from '../commands/pipedrive';
 import { copperCommand } from '../commands/copper';
 import { activecampaignCommand } from '../commands/activecampaign';
 import { surveymonkeyCommand } from '../commands/surveymonkey';
+import { asanatasksCommand } from '../commands/asanatasks';
+import { discordwebhookCommand } from '../commands/discordwebhook';
+import { openaiapiCommand } from '../commands/openaiapi';
+import { anthropicapiCommand } from '../commands/anthropicapi';
 import {
   aiCommand,
   canvaCommand,
@@ -178,6 +184,7 @@ const commands: Command[] = [
   chatworkCommand,
   moneyforwardCommand,
   slackCommand,
+  figmafilesCommand,
   miroCommand,
   loomCommand,
   webflowCommand,
@@ -209,6 +216,7 @@ const commands: Command[] = [
   zendeskCommand,
   intercomCommand,
   freshdeskCommand,
+  hubspotcrmCommand,
   storesCommand,
   baseCommand,
   shopifyCommand,
@@ -261,6 +269,10 @@ const commands: Command[] = [
   copperCommand,
   activecampaignCommand,
   surveymonkeyCommand,
+  asanatasksCommand,
+  discordwebhookCommand,
+  openaiapiCommand,
+  anthropicapiCommand,
   tiktokadsCommand,
   videoCommand,
   websiteCommand,
