@@ -32,6 +32,8 @@ import { vaultCommand } from '../commands/vault';
 import { chatworkCommand } from '../commands/chatwork';
 import { moneyforwardCommand } from '../commands/moneyforward';
 import { slackCommand } from '../commands/slack';
+import { storesCommand } from '../commands/stores';
+import { baseCommand } from '../commands/base';
 import { shopifyCommand } from '../commands/shopify';
 import { paypayCommand } from '../commands/paypay';
 import { squareCommand } from '../commands/square';
@@ -60,6 +62,7 @@ import { videoCommand } from '../commands/video';
 import { websiteCommand } from '../commands/website';
 import { kingofthymeCommand } from '../commands/kingofthyme';
 import { yayoiCommand } from '../commands/yayoi';
+import { wantedlyCommand } from '../commands/wantedly';
 import {
   aiCommand,
   canvaCommand,
@@ -121,6 +124,8 @@ const commands: Command[] = [
   chatworkCommand,
   moneyforwardCommand,
   slackCommand,
+  storesCommand,
+  baseCommand,
   shopifyCommand,
   paypayCommand,
   squareCommand,
@@ -148,6 +153,7 @@ const commands: Command[] = [
   lmessageCommand,
   kingofthymeCommand,
   yayoiCommand,
+  wantedlyCommand,
   videoCommand,
   websiteCommand,
 ];
