@@ -37,6 +37,8 @@ import { freeeCommand } from '../commands/freee';
 import { kintoneCommand } from '../commands/kintone';
 import { lineworksCommand } from '../commands/lineworks';
 import { imageCommand } from '../commands/image';
+import { lineCommand } from '../commands/line';
+import { lstepCommand } from '../commands/lstep';
 import { smarthrCommand } from '../commands/smarthr';
 import { videoCommand } from '../commands/video';
 import { websiteCommand } from '../commands/website';
@@ -108,6 +110,8 @@ const commands: Command[] = [
   smarthrCommand,
   vaultCommand,
   imageCommand,
+  lineCommand,
+  lstepCommand,
   videoCommand,
   websiteCommand,
 ];

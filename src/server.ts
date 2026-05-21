@@ -11,6 +11,9 @@ import {
   getTopUsers,
   getModelUsageStats,
 } from './services/analyticsService';
+import { parseLstepWebhook, forwardToDiscord } from './integrations/lstep';
+import { getDiscordClient } from './services/discordClient';
+import vaultService from './services/vaultService';
 
 interface DashboardUserRow {
   id: number;
@@ -2551,6 +2554,28 @@ export function startApiServer(): http.Server {
         const message = error instanceof Error ? error.message : 'Unknown error';
         sendJson(res, 500, { error: message });
       }
+      return;
+    }
+
+    // Lステップ Webhook受信
+    if (method === 'POST' && url.pathname === '/webhook/lstep') {
+      let body = '';
+      req.on('data', (chunk: Buffer) => { body += chunk.toString(); });
+      req.on('end', async () => {
+        try {
+          const parsed = JSON.parse(body) as unknown;
+          const event = parseLstepWebhook(parsed);
+          const client = getDiscordClient();
+          // guild単位でlstep_discord_channel_idを取得（システム全体共通キーで保存）
+          const channelId = process.env.LSTEP_DISCORD_CHANNEL_ID;
+          if (client && channelId) {
+            await forwardToDiscord(client, channelId, event);
+          }
+        } catch (err) {
+          console.error('[Lstep Webhook] error:', err);
+        }
+        sendJson(res, 200, { ok: true });
+      });
       return;
     }
 
