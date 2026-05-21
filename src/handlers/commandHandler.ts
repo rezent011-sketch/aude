@@ -79,6 +79,11 @@ import { sansanCommand } from '../commands/sansan';
 import { zoomCommand } from '../commands/zoom';
 import { pagerdutyCommand } from '../commands/pagerduty';
 import { datadogCommand } from '../commands/datadog';
+import { sentryCommand } from '../commands/sentry';
+import { cloudflareCommand } from '../commands/cloudflare';
+import { herokuCommand } from '../commands/heroku';
+import { launchdarklyCommand } from '../commands/launchdarkly';
+import { statuspageCommand } from '../commands/statuspage';
 import { freeeCommand } from '../commands/freee';
 import { freeehrCommand } from '../commands/freeehr';
 import { freeesignCommand } from '../commands/freeesign';
@@ -213,6 +218,11 @@ const commands: Command[] = [
   zoomCommand,
   pagerdutyCommand,
   datadogCommand,
+  sentryCommand,
+  cloudflareCommand,
+  herokuCommand,
+  launchdarklyCommand,
+  statuspageCommand,
   kintoneCommand,
   lineworksCommand,
   freeeCommand,
