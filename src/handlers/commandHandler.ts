@@ -75,6 +75,9 @@ import { wantedlyCommand } from '../commands/wantedly';
 import { receptionistCommand } from '../commands/receptionist';
 import { mfpayrollCommand } from '../commands/mfpayroll';
 import { stripeapiCommand } from '../commands/stripeapi';
+import { salesforceCommand } from '../commands/salesforce';
+import { pipedriveCommand } from '../commands/pipedrive';
+import { activecampaignCommand } from '../commands/activecampaign';
 import {
   aiCommand,
   canvaCommand,
@@ -178,6 +181,9 @@ const commands: Command[] = [
   receptionistCommand,
   mfpayrollCommand,
   stripeapiCommand,
+  salesforceCommand,
+  pipedriveCommand,
+  activecampaignCommand,
   videoCommand,
   websiteCommand,
 ];
