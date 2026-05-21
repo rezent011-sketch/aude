@@ -32,6 +32,9 @@ import { vaultCommand } from '../commands/vault';
 import { chatworkCommand } from '../commands/chatwork';
 import { moneyforwardCommand } from '../commands/moneyforward';
 import { slackCommand } from '../commands/slack';
+import { teamsCommand } from '../commands/teams';
+import { outlookCommand } from '../commands/outlook';
+import { onedriveCommand } from '../commands/onedrive';
 import { boxCommand } from '../commands/box';
 import { dropboxCommand } from '../commands/dropbox';
 import { confluenceCommand } from '../commands/confluence';
@@ -142,6 +145,9 @@ const commands: Command[] = [
   chatworkCommand,
   moneyforwardCommand,
   slackCommand,
+  teamsCommand,
+  outlookCommand,
+  onedriveCommand,
   boxCommand,
   dropboxCommand,
   confluenceCommand,
