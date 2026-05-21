@@ -1,0 +1,76 @@
+import {
+  ChatInputCommandInteraction,
+  EmbedBuilder,
+  MessageFlags,
+  SlashCommandBuilder,
+} from 'discord.js';
+import { getErrorMessage } from '../integrations/errors';
+import vaultService from '../services/vaultService';
+
+export const utageCommand = {
+  data: new SlashCommandBuilder()
+    .setName('utage')
+    .setDescription('Utage Webhookの設定とマーケティングイベント受信を行います')
+    .addSubcommand((sub) =>
+      sub.setName('setup').setDescription('Webhook URLと設定手順を表示します')
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName('channel')
+        .setDescription('Utageイベントの通知先Discordチャンネルを設定します')
+        .addStringOption((o) =>
+          o.setName('channel_id').setDescription('通知先チャンネルID').setRequired(true)
+        )
+    ),
+
+  async execute(interaction: ChatInputCommandInteraction): Promise<void> {
+    try {
+      const sub = interaction.options.getSubcommand();
+
+      if (sub === 'setup') {
+        const baseUrl = process.env.BASE_URL ?? 'https://your-domain.com';
+        await interaction.reply({
+          embeds: [
+            new EmbedBuilder()
+              .setTitle('🔗 Utage Webhook 設定手順')
+              .setDescription(
+                [
+                  '**1. Utage管理画面にログイン**',
+                  '**2. 「設定」→「Webhook」を開く**',
+                  '**3. 以下のURLを設定してください:**',
+                  '\`\`\`',
+                  `${baseUrl}/webhook/utage`,
+                  '\`\`\`',
+                  '**4. 通知先チャンネルを設定:**',
+                  '`/utage channel channel_id:<チャンネルID>`',
+                  '',
+                  '**対応イベント:** LINE登録・ブロック・メール登録・ステップ完了・購入完了',
+                ].join('\n')
+              )
+              .setColor(0xff6b35)
+              .setFooter({ text: 'UtageのマーケティングイベントをリアルタイムでDiscordに通知します' }),
+          ],
+          flags: MessageFlags.Ephemeral,
+        });
+      } else if (sub === 'channel') {
+        const channelId = interaction.options.getString('channel_id', true);
+        await vaultService.setCredential(interaction.user.id, 'guild', 'utage_discord_channel_id', channelId);
+        await interaction.reply({
+          embeds: [
+            new EmbedBuilder()
+              .setTitle('✅ 通知先チャンネルを設定しました')
+              .setDescription(`Utageのイベントを <#${channelId}> に通知します。`)
+              .setColor(0xff6b35),
+          ],
+          flags: MessageFlags.Ephemeral,
+        });
+      }
+    } catch (err) {
+      const msg = getErrorMessage(err, 'エラーが発生しました。');
+      await interaction.reply({
+        embeds: [new EmbedBuilder().setTitle('❌ エラー').setDescription(msg).setColor(0xed4245)],
+        flags: MessageFlags.Ephemeral,
+      });
+    }
+  },
+};

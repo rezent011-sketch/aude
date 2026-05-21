@@ -39,6 +39,9 @@ import { lineworksCommand } from '../commands/lineworks';
 import { imageCommand } from '../commands/image';
 import { lineCommand } from '../commands/line';
 import { lstepCommand } from '../commands/lstep';
+import { elmeCommand } from '../commands/elme';
+import { utageCommand } from '../commands/utage';
+import { lmessageCommand } from '../commands/lmessage';
 import { smarthrCommand } from '../commands/smarthr';
 import { videoCommand } from '../commands/video';
 import { websiteCommand } from '../commands/website';
@@ -112,6 +115,9 @@ const commands: Command[] = [
   imageCommand,
   lineCommand,
   lstepCommand,
+  elmeCommand,
+  utageCommand,
+  lmessageCommand,
   videoCommand,
   websiteCommand,
 ];

@@ -12,6 +12,9 @@ import {
   getModelUsageStats,
 } from './services/analyticsService';
 import { parseLstepWebhook, forwardToDiscord } from './integrations/lstep';
+import { parseElmeWebhook, forwardElmeToDiscord } from './integrations/elme';
+import { parseUtageWebhook, forwardUtageToDiscord } from './integrations/utage';
+import { parseLmessageWebhook, forwardLmessageToDiscord } from './integrations/lmessage';
 import { getDiscordClient } from './services/discordClient';
 import vaultService from './services/vaultService';
 
@@ -2573,6 +2576,69 @@ export function startApiServer(): http.Server {
           }
         } catch (err) {
           console.error('[Lstep Webhook] error:', err);
+        }
+        sendJson(res, 200, { ok: true });
+      });
+      return;
+    }
+
+    // エルメ Webhook受信
+    if (method === 'POST' && url.pathname === '/webhook/elme') {
+      let body = '';
+      req.on('data', (chunk: Buffer) => { body += chunk.toString(); });
+      req.on('end', async () => {
+        try {
+          const parsed = JSON.parse(body) as unknown;
+          const event = parseElmeWebhook(parsed);
+          const client = getDiscordClient();
+          const channelId = process.env.ELME_DISCORD_CHANNEL_ID;
+          if (client && channelId) {
+            await forwardElmeToDiscord(client, channelId, event);
+          }
+        } catch (err) {
+          console.error('[Elme Webhook] error:', err);
+        }
+        sendJson(res, 200, { ok: true });
+      });
+      return;
+    }
+
+    // Utage Webhook受信
+    if (method === 'POST' && url.pathname === '/webhook/utage') {
+      let body = '';
+      req.on('data', (chunk: Buffer) => { body += chunk.toString(); });
+      req.on('end', async () => {
+        try {
+          const parsed = JSON.parse(body) as unknown;
+          const event = parseUtageWebhook(parsed);
+          const client = getDiscordClient();
+          const channelId = process.env.UTAGE_DISCORD_CHANNEL_ID;
+          if (client && channelId) {
+            await forwardUtageToDiscord(client, channelId, event);
+          }
+        } catch (err) {
+          console.error('[Utage Webhook] error:', err);
+        }
+        sendJson(res, 200, { ok: true });
+      });
+      return;
+    }
+
+    // Lメッセージ Webhook受信
+    if (method === 'POST' && url.pathname === '/webhook/lmessage') {
+      let body = '';
+      req.on('data', (chunk: Buffer) => { body += chunk.toString(); });
+      req.on('end', async () => {
+        try {
+          const parsed = JSON.parse(body) as unknown;
+          const event = parseLmessageWebhook(parsed);
+          const client = getDiscordClient();
+          const channelId = process.env.LMESSAGE_DISCORD_CHANNEL_ID;
+          if (client && channelId) {
+            await forwardLmessageToDiscord(client, channelId, event);
+          }
+        } catch (err) {
+          console.error('[Lmessage Webhook] error:', err);
         }
         sendJson(res, 200, { ok: true });
       });
