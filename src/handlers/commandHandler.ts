@@ -35,7 +35,9 @@ import { pagerdutyCommand } from '../commands/pagerduty';
 import { datadogCommand } from '../commands/datadog';
 import { freeeCommand } from '../commands/freee';
 import { kintoneCommand } from '../commands/kintone';
+import { lineworksCommand } from '../commands/lineworks';
 import { imageCommand } from '../commands/image';
+import { smarthrCommand } from '../commands/smarthr';
 import { videoCommand } from '../commands/video';
 import { websiteCommand } from '../commands/website';
 import {
@@ -101,7 +103,9 @@ const commands: Command[] = [
   pagerdutyCommand,
   datadogCommand,
   kintoneCommand,
+  lineworksCommand,
   freeeCommand,
+  smarthrCommand,
   vaultCommand,
   imageCommand,
   videoCommand,
