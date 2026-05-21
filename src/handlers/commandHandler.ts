@@ -32,6 +32,9 @@ import { vaultCommand } from '../commands/vault';
 import { chatworkCommand } from '../commands/chatwork';
 import { moneyforwardCommand } from '../commands/moneyforward';
 import { slackCommand } from '../commands/slack';
+import { shopifyCommand } from '../commands/shopify';
+import { paypayCommand } from '../commands/paypay';
+import { squareCommand } from '../commands/square';
 import { cloudsignCommand } from '../commands/cloudsign';
 import { jobcanCommand } from '../commands/jobcan';
 import { cybozuCommand } from '../commands/cybozu';
@@ -115,6 +118,9 @@ const commands: Command[] = [
   chatworkCommand,
   moneyforwardCommand,
   slackCommand,
+  shopifyCommand,
+  paypayCommand,
+  squareCommand,
   cloudsignCommand,
   jobcanCommand,
   cybozuCommand,
