@@ -30,6 +30,9 @@ import { browseCommand } from '../commands/browse';
 import { alertCommand } from '../commands/alert';
 import { vaultCommand } from '../commands/vault';
 import { chatworkCommand } from '../commands/chatwork';
+import { moneyforwardCommand } from '../commands/moneyforward';
+import { slackCommand } from '../commands/slack';
+import { sansanCommand } from '../commands/sansan';
 import { zoomCommand } from '../commands/zoom';
 import { pagerdutyCommand } from '../commands/pagerduty';
 import { datadogCommand } from '../commands/datadog';
@@ -104,6 +107,9 @@ const commands: Command[] = [
   browseCommand,
   alertCommand,
   chatworkCommand,
+  moneyforwardCommand,
+  slackCommand,
+  sansanCommand,
   zoomCommand,
   pagerdutyCommand,
   datadogCommand,
