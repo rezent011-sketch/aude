@@ -32,12 +32,14 @@ import { vaultCommand } from '../commands/vault';
 import { chatworkCommand } from '../commands/chatwork';
 import { moneyforwardCommand } from '../commands/moneyforward';
 import { slackCommand } from '../commands/slack';
+import { circleciCommand } from '../commands/circleci';
 import { awss3Command } from '../commands/awss3';
 import { calendlyCommand } from '../commands/calendly';
 import { cloudwatchCommand } from '../commands/cloudwatch';
 import { googleanalyticsCommand } from '../commands/googleanalytics';
 import { githubactionsCommand } from '../commands/githubactions';
 import { mailchimpCommand } from '../commands/mailchimp';
+import { brevoCommand } from '../commands/brevo';
 import { metaadsCommand } from '../commands/metaads';
 import { teamsCommand } from '../commands/teams';
 import { tiktokadsCommand } from '../commands/tiktokads';
@@ -93,7 +95,9 @@ import { stripeapiCommand } from '../commands/stripeapi';
 import { typeformCommand } from '../commands/typeform';
 import { salesforceCommand } from '../commands/salesforce';
 import { pipedriveCommand } from '../commands/pipedrive';
+import { copperCommand } from '../commands/copper';
 import { activecampaignCommand } from '../commands/activecampaign';
+import { surveymonkeyCommand } from '../commands/surveymonkey';
 import {
   aiCommand,
   canvaCommand,
@@ -155,12 +159,14 @@ const commands: Command[] = [
   chatworkCommand,
   moneyforwardCommand,
   slackCommand,
+  circleciCommand,
   awss3Command,
   cloudwatchCommand,
   calendlyCommand,
   googleanalyticsCommand,
   githubactionsCommand,
   mailchimpCommand,
+  brevoCommand,
   metaadsCommand,
   teamsCommand,
   outlookCommand,
@@ -214,7 +220,9 @@ const commands: Command[] = [
   typeformCommand,
   salesforceCommand,
   pipedriveCommand,
+  copperCommand,
   activecampaignCommand,
+  surveymonkeyCommand,
   tiktokadsCommand,
   videoCommand,
   websiteCommand,
