@@ -32,6 +32,7 @@ import { vaultCommand } from '../commands/vault';
 import { chatworkCommand } from '../commands/chatwork';
 import { moneyforwardCommand } from '../commands/moneyforward';
 import { slackCommand } from '../commands/slack';
+import { calendlyCommand } from '../commands/calendly';
 import { googleanalyticsCommand } from '../commands/googleanalytics';
 import { metaadsCommand } from '../commands/metaads';
 import { teamsCommand } from '../commands/teams';
@@ -55,6 +56,7 @@ import { shopifyCommand } from '../commands/shopify';
 import { paypayCommand } from '../commands/paypay';
 import { squareCommand } from '../commands/square';
 import { cloudsignCommand } from '../commands/cloudsign';
+import { docusignCommand } from '../commands/docusign';
 import { jobcanCommand } from '../commands/jobcan';
 import { cybozuCommand } from '../commands/cybozu';
 import { talentioCommand } from '../commands/talentio';
@@ -84,6 +86,7 @@ import { wantedlyCommand } from '../commands/wantedly';
 import { receptionistCommand } from '../commands/receptionist';
 import { mfpayrollCommand } from '../commands/mfpayroll';
 import { stripeapiCommand } from '../commands/stripeapi';
+import { typeformCommand } from '../commands/typeform';
 import { salesforceCommand } from '../commands/salesforce';
 import { pipedriveCommand } from '../commands/pipedrive';
 import { activecampaignCommand } from '../commands/activecampaign';
@@ -148,6 +151,7 @@ const commands: Command[] = [
   chatworkCommand,
   moneyforwardCommand,
   slackCommand,
+  calendlyCommand,
   googleanalyticsCommand,
   metaadsCommand,
   teamsCommand,
@@ -170,6 +174,7 @@ const commands: Command[] = [
   paypayCommand,
   squareCommand,
   cloudsignCommand,
+  docusignCommand,
   jobcanCommand,
   cybozuCommand,
   talentioCommand,
@@ -198,6 +203,7 @@ const commands: Command[] = [
   receptionistCommand,
   mfpayrollCommand,
   stripeapiCommand,
+  typeformCommand,
   salesforceCommand,
   pipedriveCommand,
   activecampaignCommand,
