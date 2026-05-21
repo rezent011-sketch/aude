@@ -13,7 +13,7 @@
 # - PROJECT_DIR defaults to ~/aude for Aude project; override with env var if needed
 
 TASK_NAME="$1"
-PROMPT="$2"
+PROMPT_FILE="$2"   # ← ファイルパスを受け取る（シェル展開を避けるため変数展開しない）
 PROJECT_DIR="${AUDE_PROJECT_DIR:-/Users/apple/aude}"
 BOT_TOKEN="${TELEGRAM_BOT_TOKEN}"      # set in .env
 CHAT_ID="${TELEGRAM_CHAT_ID}"          # set in .env
@@ -47,8 +47,13 @@ send_telegram "🚀 開発開始
 時刻: $(date '+%Y-%m-%d %H:%M')"
 
 # Codex writes code only — do NOT include git commands in the prompt
-# IMPORTANT: pass prompt via stdin, not as positional arg
-echo "$PROMPT" | codex exec --dangerously-bypass-approvals-and-sandbox > "$LOG_FILE" 2>&1
+# IMPORTANT: ファイルをそのままstdinに渡す（シェル変数展開を避ける）
+if [ ! -f "$PROMPT_FILE" ]; then
+  send_telegram "❌ プロンプトファイルが見つかりません: ${PROMPT_FILE}"
+  rm -f "$LOCK_FILE"
+  exit 1
+fi
+codex exec --dangerously-bypass-approvals-and-sandbox < "$PROMPT_FILE" > "$LOG_FILE" 2>&1
 EXIT_CODE=$?
 
 # Git operations outside Codex sandbox
