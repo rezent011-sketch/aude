@@ -1293,135 +1293,422 @@ function getDashboardUserDetail(discordUserId: string): {
 function getIntegrationsDashboardHtml(): string {
   return `<!DOCTYPE html>
 <html lang="ja">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Aude — Integrations</title>
-    <style>
-      :root {
-        --bg: #0f1117;
-        --panel: #16181f;
-        --panel-strong: #1e2029;
-        --border: rgba(255,255,255,0.08);
-        --text: #e8eaf0;
-        --muted: #8b8fa8;
-        --accent: #7c6dfa;
-        --green: #22c55e;
-        --red: #ef4444;
-        --yellow: #f59e0b;
-      }
-      * { box-sizing: border-box; margin: 0; padding: 0; }
-      body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; min-height: 100vh; }
-      .shell { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
-      h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 4px; }
-      .nav { display: flex; gap: 16px; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
-      .nav a { color: var(--muted); text-decoration: none; font-size: 0.9rem; }
-      .nav a:hover { color: var(--text); }
-      .nav a.active { color: var(--accent); font-weight: 600; }
-      .subtitle { color: var(--muted); font-size: 0.9rem; margin-bottom: 32px; }
-      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
-      .card {
-        background: var(--panel);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        padding: 20px;
-        display: flex;
-        align-items: center;
-        gap: 16px;
-      }
-      .card-icon { font-size: 2rem; width: 48px; text-align: center; }
-      .card-info { flex: 1; }
-      .card-name { font-weight: 600; font-size: 1rem; margin-bottom: 4px; }
-      .card-type { font-size: 0.78rem; color: var(--muted); margin-bottom: 8px; }
-      .badge {
-        display: inline-flex; align-items: center; gap: 6px;
-        padding: 4px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 600;
-      }
-      .badge.ok { background: rgba(34,197,94,0.15); color: var(--green); }
-      .badge.ng { background: rgba(239,68,68,0.15); color: var(--red); }
-      .badge::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-      .section-title { font-size: 1.1rem; font-weight: 600; margin: 32px 0 16px; color: var(--text); }
-      .loading { color: var(--muted); padding: 24px; text-align: center; }
-    </style>
-  </head>
-  <body>
-    <div class="shell">
-      <h1>Aude AI</h1>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aude — Integrations</title>
+  <style>
+    :root {
+      --bg: #0d0f14;
+      --panel: #13151c;
+      --panel-hover: #1a1d27;
+      --border: rgba(255,255,255,0.07);
+      --border-strong: rgba(255,255,255,0.14);
+      --text: #e8eaf0;
+      --muted: #7a7e99;
+      --accent: #7c6dfa;
+      --accent-dim: rgba(124,109,250,0.15);
+      --green: #22c55e;
+      --green-dim: rgba(34,197,94,0.12);
+      --red: #ef4444;
+      --red-dim: rgba(239,68,68,0.12);
+      --japan: #f59e0b;
+      --japan-dim: rgba(245,158,11,0.12);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; }
+
+    /* ── Header / Nav ── */
+    .header { border-bottom: 1px solid var(--border); padding: 0 32px; }
+    .header-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 56px; }
+    .logo { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; color: var(--text); text-decoration: none; }
+    .logo span { color: var(--accent); }
+    .nav { display: flex; gap: 4px; }
+    .nav a { color: var(--muted); text-decoration: none; font-size: 0.85rem; padding: 6px 12px; border-radius: 8px; transition: all 0.15s; }
+    .nav a:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+    .nav a.active { color: var(--text); background: rgba(255,255,255,0.08); font-weight: 500; }
+
+    /* ── Main Layout ── */
+    .shell { max-width: 1200px; margin: 0 auto; padding: 40px 32px; }
+    .page-header { margin-bottom: 32px; }
+    .page-title { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 6px; }
+    .page-sub { color: var(--muted); font-size: 0.9rem; }
+
+    /* ── Stats Bar ── */
+    .stats-bar { display: flex; gap: 24px; margin-bottom: 32px; padding: 20px 24px; background: var(--panel); border: 1px solid var(--border); border-radius: 16px; }
+    .stat { display: flex; flex-direction: column; gap: 2px; }
+    .stat-num { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
+    .stat-num.green { color: var(--green); }
+    .stat-num.muted { color: var(--muted); }
+    .stat-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    .stat-divider { width: 1px; background: var(--border); margin: 0 8px; }
+
+    /* ── Controls ── */
+    .controls { display: flex; gap: 12px; margin-bottom: 28px; align-items: center; flex-wrap: wrap; }
+    .search-wrap { position: relative; flex: 1; min-width: 200px; max-width: 360px; }
+    .search-wrap input {
+      width: 100%; padding: 9px 12px 9px 38px;
+      background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+      color: var(--text); font-size: 0.875rem; outline: none;
+      transition: border-color 0.15s;
+    }
+    .search-wrap input:focus { border-color: var(--accent); }
+    .search-wrap input::placeholder { color: var(--muted); }
+    .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 0.9rem; pointer-events: none; }
+    .filter-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+    .filter-btn {
+      padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border);
+      background: transparent; color: var(--muted); font-size: 0.8rem; cursor: pointer;
+      transition: all 0.15s; white-space: nowrap;
+    }
+    .filter-btn:hover { color: var(--text); border-color: var(--border-strong); }
+    .filter-btn.active { background: var(--accent-dim); color: var(--accent); border-color: rgba(124,109,250,0.3); font-weight: 500; }
+    .filter-btn.japan.active { background: var(--japan-dim); color: var(--japan); border-color: rgba(245,158,11,0.3); }
+
+    /* ── Section ── */
+    .section { margin-bottom: 40px; }
+    .section-head { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .section-label { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+    .section-count { font-size: 0.75rem; color: var(--muted); background: rgba(255,255,255,0.06); padding: 2px 8px; border-radius: 999px; }
+    .section-jp-badge { font-size: 0.7rem; background: var(--japan-dim); color: var(--japan); padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+
+    /* ── Grid ── */
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+
+    /* ── Card ── */
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: all 0.15s;
+      cursor: default;
+      position: relative;
+      overflow: hidden;
+    }
+    .card:hover { background: var(--panel-hover); border-color: var(--border-strong); }
+    .card.connected { border-color: rgba(34,197,94,0.2); }
+    .card.connected:hover { border-color: rgba(34,197,94,0.35); }
+    .card-logo {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: rgba(255,255,255,0.06);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .card-logo img { width: 22px; height: 22px; object-fit: contain; }
+    .card-logo .emoji { font-size: 1.2rem; line-height: 1; }
+    .card-body { flex: 1; min-width: 0; }
+    .card-name { font-size: 0.88rem; font-weight: 600; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card-desc { font-size: 0.75rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 8px; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 600;
+    }
+    .badge::before { content: ''; display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+    .badge-ok  { background: var(--green-dim); color: var(--green); }
+    .badge-ng  { background: rgba(255,255,255,0.05); color: var(--muted); }
+    .badge-jp  { background: var(--japan-dim); color: var(--japan); }
+    .card-env { font-size: 0.68rem; color: rgba(255,255,255,0.25); margin-top: 4px; font-family: 'SF Mono', monospace; }
+
+    /* ── Empty ── */
+    .no-results { padding: 60px 0; text-align: center; color: var(--muted); font-size: 0.9rem; display: none; }
+    .no-results.show { display: block; }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .shell { padding: 24px 16px; }
+      .header { padding: 0 16px; }
+      .stats-bar { flex-wrap: wrap; gap: 16px; }
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <a href="/" class="logo">Aude <span>AI</span></a>
       <nav class="nav">
         <a href="/">Users</a>
         <a href="/guilds">Servers</a>
         <a href="/integrations" class="active">Integrations</a>
+        <a href="/analytics">Analytics</a>
       </nav>
-      <p class="subtitle">外部ツール・APIキーの設定状況です。未設定の場合は .env に追加してください。</p>
-
-      <div class="section-title">AI Models</div>
-      <div id="ai-grid" class="grid"><div class="loading">Loading...</div></div>
-
-      <div class="section-title">Billing</div>
-      <div id="billing-grid" class="grid"><div class="loading">Loading...</div></div>
-
-      <div class="section-title">Productivity</div>
-      <div id="productivity-grid" class="grid"><div class="loading">Loading...</div></div>
-
-      <div class="section-title">Design & Media</div>
-      <div id="design-grid" class="grid"><div class="loading">Loading...</div></div>
     </div>
-    <script>
-      // Simple Icons CDN base URL
-      var SI = 'https://cdn.simpleicons.org';
-      var SI2 = 'https://unpkg.com/simple-icons@16.20.0/icons';
+  </header>
 
-      var INTEGRATIONS = {
-        ai: [
-          { key: 'openai',    name: 'OpenAI',          logo: 'https://api.iconify.design/simple-icons:openai.svg?color=white',  type: 'AI Model (GPT-4o, gpt-5.4)', invert: false },
-          { key: 'anthropic', name: 'Anthropic',        logo: SI+'/anthropic/ffffff',     type: 'AI Model (Claude)', invert: false },
-          { key: 'gemini',    name: 'Google Gemini',    logo: SI+'/googlegemini/ffffff',  type: 'AI Model (Gemini)', invert: false },
-        ],
-        billing: [
-          { key: 'stripe',    name: 'Stripe',           logo: SI+'/stripe/ffffff',        type: 'Payment Processing', invert: false },
-        ],
-        productivity: [
-          { key: 'notion',    name: 'Notion',           logo: SI+'/notion/ffffff',        type: 'Note-taking & Wiki', invert: false },
-          { key: 'github',    name: 'GitHub',           logo: SI+'/github/ffffff',        type: 'Code Repository', invert: false },
-          { key: 'google',    name: 'Google Workspace', logo: SI+'/google/ffffff',        type: 'Gmail / Calendar / Drive', invert: false },
-          { key: 'hubspot',   name: 'HubSpot',          logo: SI+'/hubspot/ffffff',       type: 'CRM', invert: false },
-          { key: 'vercel',    name: 'Vercel',           logo: SI+'/vercel/ffffff',        type: 'Deployment', invert: false },
-          { key: 'fireflies', name: 'Fireflies.ai',     logo: SI+'/fireflyiii/ffffff',    type: 'Meeting Transcription', invert: false },
-        ],
-        design: [
-          { key: 'canva',     name: 'Canva',            logo: 'https://api.iconify.design/simple-icons:canva.svg?color=white',   type: 'Design Tool', invert: false },
-          { key: 'figma',     name: 'Figma',            logo: SI+'/figma/ffffff',         type: 'UI Design', invert: false },
-          { key: 'fal',       name: 'fal.ai',           logo: 'https://api.iconify.design/simple-icons:falDotAi.svg?color=white', type: 'AI Image & Video (FLUX / Kling)', invert: false },
-        ],
-      };
+  <div class="shell">
+    <div class="page-header">
+      <h1 class="page-title">Integrations</h1>
+      <p class="page-sub">100+ 外部ツール連携 — APIキーを .env に設定するだけで使えます</p>
+    </div>
 
-      function renderCards(containerId, items, status) {
-        var el = document.getElementById(containerId);
-        el.innerHTML = items.map(function(item) {
-          var ok = status[item.key];
-          var imgStyle = 'width:28px;height:28px;object-fit:contain;' + (item.invert ? 'filter:invert(1);' : '');
-          return '<div class="card">'
-            + '<div class="card-icon"><img src="' + item.logo + '" alt="' + item.name + '" style="' + imgStyle + '" /></div>'
-            + '<div class="card-info">'
-            + '<div class="card-name">' + item.name + '</div>'
-            + '<div class="card-type">' + item.type + '</div>'
-            + '<span class="badge ' + (ok ? 'ok' : 'ng') + '">' + (ok ? '設定済み' : '未設定') + '</span>'
-            + '</div></div>';
-        }).join('');
+    <div class="stats-bar" id="stats-bar">
+      <div class="stat">
+        <div class="stat-num" id="stat-total">—</div>
+        <div class="stat-label">Total</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <div class="stat-num green" id="stat-connected">—</div>
+        <div class="stat-label">Connected</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <div class="stat-num muted" id="stat-pending">—</div>
+        <div class="stat-label">Not Connected</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search" placeholder="ツールを検索..." oninput="filterAll()" />
+      </div>
+      <div class="filter-btns" id="filter-btns">
+        <button class="filter-btn active" onclick="setFilter('all', this)">すべて</button>
+        <button class="filter-btn" onclick="setFilter('connected', this)">✅ 設定済み</button>
+        <button class="filter-btn" onclick="setFilter('pending', this)">⬜ 未設定</button>
+        <button class="filter-btn japan" onclick="setFilter('japan', this)">🇯🇵 日本特化</button>
+      </div>
+    </div>
+
+    <div id="sections-root"></div>
+    <div class="no-results" id="no-results">該当するツールが見つかりませんでした</div>
+  </div>
+
+<script>
+var SI = 'https://cdn.simpleicons.org';
+var IC = 'https://api.iconify.design';
+
+var CATS = [
+  { id: 'ai', label: 'AI Models', emoji: '🤖', jp: false, tools: [
+    { key:'openai',       name:'OpenAI',           desc:'GPT-4o / gpt-5.4',                 logo: IC+'/simple-icons:openai.svg?color=ffffff',         env:'OPENAI_API_KEY' },
+    { key:'anthropic',    name:'Anthropic',         desc:'Claude 3.5 Sonnet',                logo: SI+'/anthropic/ffffff',                              env:'ANTHROPIC_API_KEY' },
+    { key:'gemini',       name:'Google Gemini',     desc:'Gemini 1.5 Pro',                   logo: SI+'/googlegemini/ffffff',                           env:'GEMINI_API_KEY' },
+    { key:'fal',          name:'fal.ai',            desc:'FLUX / Kling 動画生成',            logo: IC+'/simple-icons:falDotAi.svg?color=ffffff',        env:'FAL_KEY' },
+  ]},
+  { id: 'communication', label: 'Communication', emoji: '💬', jp: false, tools: [
+    { key:'slack',        name:'Slack',             desc:'チームチャット・通知',              logo: SI+'/slack/ffffff',                                  env:'SLACK_BOT_TOKEN' },
+    { key:'teams',        name:'Microsoft Teams',   desc:'Teams通知・メッセージ',            logo: SI+'/microsoftteams/ffffff',                         env:'TEAMS_WEBHOOK_URL' },
+    { key:'zoom',         name:'Zoom',              desc:'ビデオ会議',                        logo: SI+'/zoom/ffffff',                                   env:'ZOOM_CLIENT_ID' },
+    { key:'line',         name:'LINE',              desc:'LINEメッセージ送受信',              logo: SI+'/line/ffffff',                                   env:'LINE_CHANNEL_ACCESS_TOKEN' },
+    { key:'twilio',       name:'Twilio',            desc:'SMS・電話',                         logo: SI+'/twilio/ffffff',                                 env:'TWILIO_ACCOUNT_SID' },
+    { key:'vonage',       name:'Vonage',            desc:'SMS・音声通話',                     logo: SI+'/vonage/ffffff',                                 env:'VONAGE_API_KEY' },
+    { key:'fireflies',    name:'Fireflies.ai',      desc:'会議録音・文字起こし',              logo: SI+'/fireflyiii/ffffff',                             env:'FIREFLIES_API_KEY' },
+    { key:'loom',         name:'Loom',              desc:'動画録画・共有',                    logo: SI+'/loom/ffffff',                                   env:'LOOM_API_KEY' },
+    { key:'discordwebhook',name:'Discord Webhook',  desc:'Discordへのメッセージ送信',        logo: SI+'/discord/ffffff',                                env:'DISCORD_WEBHOOK_URL' },
+  ]},
+  { id: 'productivity', label: 'Productivity', emoji: '📋', jp: false, tools: [
+    { key:'notion',       name:'Notion',            desc:'ノート・Wiki・DB',                  logo: SI+'/notion/ffffff',                                 env:'NOTION_API_KEY' },
+    { key:'google',       name:'Google Workspace',  desc:'Gmail / Calendar / Drive',         logo: SI+'/google/ffffff',                                 env:'GOOGLE_CLIENT_ID' },
+    { key:'airtable',     name:'Airtable',          desc:'スプレッドシートDB',                logo: SI+'/airtable/ffffff',                               env:'AIRTABLE_API_KEY' },
+    { key:'coda',         name:'Coda',              desc:'ドキュメント・DB',                  logo: IC+'/simple-icons:coda.svg?color=ffffff',            env:'CODA_API_TOKEN' },
+    { key:'confluence',   name:'Confluence',        desc:'ドキュメント管理',                  logo: SI+'/confluence/ffffff',                             env:'CONFLUENCE_API_TOKEN' },
+    { key:'monday',       name:'Monday.com',        desc:'プロジェクト管理',                  logo: SI+'/mondaydotcom/ffffff',                           env:'MONDAY_API_KEY' },
+    { key:'clickup',      name:'ClickUp',           desc:'タスク管理',                        logo: SI+'/clickup/ffffff',                                env:'CLICKUP_API_KEY' },
+    { key:'asana',        name:'Asana',             desc:'タスク管理',                        logo: SI+'/asana/ffffff',                                  env:'ASANA_ACCESS_TOKEN' },
+    { key:'trello',       name:'Trello',            desc:'かんばんボード',                    logo: SI+'/trello/ffffff',                                 env:'TRELLO_API_KEY' },
+    { key:'jira',         name:'Jira',              desc:'課題管理',                          logo: SI+'/jira/ffffff',                                   env:'JIRA_API_TOKEN' },
+    { key:'linear',       name:'Linear',            desc:'エンジニア向けタスク管理',          logo: SI+'/linear/ffffff',                                 env:'LINEAR_API_KEY' },
+    { key:'miro',         name:'Miro',              desc:'オンラインホワイトボード',           logo: SI+'/miro/ffffff',                                   env:'MIRO_ACCESS_TOKEN' },
+    { key:'typeform',     name:'Typeform',          desc:'フォーム作成',                      logo: SI+'/typeform/ffffff',                               env:'TYPEFORM_API_KEY' },
+    { key:'surveymonkey', name:'SurveyMonkey',      desc:'アンケート',                        logo: SI+'/surveymonkey/ffffff',                           env:'SURVEYMONKEY_ACCESS_TOKEN' },
+    { key:'dropbox',      name:'Dropbox',           desc:'クラウドストレージ',                logo: SI+'/dropbox/ffffff',                                env:'DROPBOX_ACCESS_TOKEN' },
+    { key:'box',          name:'Box',               desc:'エンタープライズストレージ',        logo: SI+'/box/ffffff',                                    env:'BOX_CLIENT_ID' },
+    { key:'onedrive',     name:'OneDrive',          desc:'クラウドストレージ',                logo: IC+'/simple-icons:microsoftonedrive.svg?color=ffffff', env:'ONEDRIVE_CLIENT_ID' },
+    { key:'outlook',      name:'Outlook',           desc:'メール・カレンダー',                logo: IC+'/simple-icons:microsoftoutlook.svg?color=ffffff', env:'OUTLOOK_CLIENT_ID' },
+    { key:'calendly',     name:'Calendly',          desc:'予約管理',                          logo: IC+'/simple-icons:calendly.svg?color=ffffff',        env:'CALENDLY_API_KEY' },
+    { key:'retool',       name:'Retool',            desc:'内部ツール構築',                    logo: IC+'/simple-icons:retool.svg?color=ffffff',           env:'RETOOL_API_KEY' },
+  ]},
+  { id: 'development', label: 'Development', emoji: '⚙️', jp: false, tools: [
+    { key:'github',       name:'GitHub',            desc:'コードリポジトリ',                  logo: SI+'/github/ffffff',                                 env:'GITHUB_TOKEN' },
+    { key:'gitlab',       name:'GitLab',            desc:'DevOpsプラットフォーム',            logo: SI+'/gitlab/ffffff',                                 env:'GITLAB_ACCESS_TOKEN' },
+    { key:'vercel',       name:'Vercel',            desc:'フロントエンドデプロイ',            logo: SI+'/vercel/ffffff',                                 env:'VERCEL_TOKEN' },
+    { key:'heroku',       name:'Heroku',            desc:'アプリデプロイ',                    logo: SI+'/heroku/ffffff',                                 env:'HEROKU_API_KEY' },
+    { key:'cloudflare',   name:'Cloudflare',        desc:'CDN・DNS・セキュリティ',            logo: SI+'/cloudflare/ffffff',                             env:'CLOUDFLARE_API_TOKEN' },
+    { key:'awss3',        name:'AWS S3',            desc:'クラウドストレージ',                logo: IC+'/simple-icons:amazons3.svg?color=ffffff',        env:'AWS_ACCESS_KEY_ID' },
+    { key:'circleci',     name:'CircleCI',          desc:'CI/CD',                             logo: SI+'/circleci/ffffff',                               env:'CIRCLECI_TOKEN' },
+    { key:'launchdarkly', name:'LaunchDarkly',      desc:'フィーチャーフラグ',                logo: IC+'/simple-icons:launchdarkly.svg?color=ffffff',    env:'LAUNCHDARKLY_SDK_KEY' },
+    { key:'sentry',       name:'Sentry',            desc:'エラー監視',                        logo: SI+'/sentry/ffffff',                                 env:'SENTRY_DSN' },
+    { key:'datadog',      name:'Datadog',           desc:'インフラ監視',                      logo: SI+'/datadog/ffffff',                                env:'DATADOG_API_KEY' },
+    { key:'pagerduty',    name:'PagerDuty',         desc:'インシデント管理',                  logo: SI+'/pagerduty/ffffff',                              env:'PAGERDUTY_API_KEY' },
+    { key:'statuspage',   name:'Statuspage',        desc:'障害ページ管理',                    logo: IC+'/simple-icons:atlassian.svg?color=ffffff',       env:'STATUSPAGE_API_KEY' },
+    { key:'webflow',      name:'Webflow',           desc:'ノーコードWeb制作',                 logo: SI+'/webflow/ffffff',                                env:'WEBFLOW_API_TOKEN' },
+    { key:'cloudwatch',   name:'AWS CloudWatch',    desc:'ログ・モニタリング',                logo: IC+'/simple-icons:amazonaws.svg?color=ffffff',       env:'AWS_ACCESS_KEY_ID' },
+  ]},
+  { id: 'crm', label: 'CRM & Sales', emoji: '🤝', jp: false, tools: [
+    { key:'hubspot',      name:'HubSpot',           desc:'CRM・マーケティング',               logo: SI+'/hubspot/ffffff',                                env:'HUBSPOT_ACCESS_TOKEN' },
+    { key:'salesforce',   name:'Salesforce',        desc:'エンタープライズCRM',               logo: SI+'/salesforce/ffffff',                             env:'SALESFORCE_CLIENT_ID' },
+    { key:'pipedrive',    name:'Pipedrive',         desc:'営業CRM',                           logo: SI+'/pipedrive/ffffff',                              env:'PIPEDRIVE_API_KEY' },
+    { key:'intercom',     name:'Intercom',          desc:'カスタマーサポート',                logo: SI+'/intercom/ffffff',                               env:'INTERCOM_ACCESS_TOKEN' },
+    { key:'freshdesk',    name:'Freshdesk',         desc:'ヘルプデスク',                      logo: SI+'/freshdesk/ffffff',                              env:'FRESHDESK_API_KEY' },
+    { key:'zendesk',      name:'Zendesk',           desc:'カスタマーサポート',                logo: SI+'/zendesk/ffffff',                                env:'ZENDESK_API_TOKEN' },
+    { key:'copper',       name:'Copper',            desc:'Google連携CRM',                     logo: IC+'/material-symbols:diamond.svg?color=ffffff',     env:'COPPER_API_KEY' },
+    { key:'sansan',       name:'Sansan',            desc:'名刺管理（日本）',                  logo: IC+'/material-symbols:badge.svg?color=ffffff',       env:'SANSAN_API_KEY' },
+  ]},
+  { id: 'marketing', label: 'Marketing', emoji: '📢', jp: false, tools: [
+    { key:'mailchimp',    name:'Mailchimp',         desc:'メールマーケティング',              logo: SI+'/mailchimp/ffffff',                              env:'MAILCHIMP_API_KEY' },
+    { key:'sendgrid',     name:'SendGrid',          desc:'メール配信',                        logo: SI+'/sendgrid/ffffff',                               env:'SENDGRID_API_KEY' },
+    { key:'brevo',        name:'Brevo',             desc:'メール・SMS・CRM',                  logo: IC+'/simple-icons:brevo.svg?color=ffffff',           env:'BREVO_API_KEY' },
+    { key:'postmark',     name:'Postmark',          desc:'トランザクションメール',            logo: IC+'/simple-icons:postmark.svg?color=ffffff',        env:'POSTMARK_SERVER_TOKEN' },
+    { key:'activecampaign',name:'ActiveCampaign',   desc:'マーケティングオートメーション',    logo: IC+'/material-symbols:campaign.svg?color=ffffff',    env:'ACTIVECAMPAIGN_API_KEY' },
+    { key:'segment',      name:'Segment',           desc:'顧客データ基盤',                    logo: SI+'/segment/ffffff',                                env:'SEGMENT_WRITE_KEY' },
+    { key:'mixpanel',     name:'Mixpanel',          desc:'プロダクトアナリティクス',          logo: SI+'/mixpanel/ffffff',                               env:'MIXPANEL_TOKEN' },
+    { key:'amplitude',    name:'Amplitude',         desc:'プロダクトアナリティクス',          logo: SI+'/amplitude/ffffff',                              env:'AMPLITUDE_API_KEY' },
+    { key:'googleanalytics',name:'Google Analytics',desc:'Webアナリティクス',                logo: SI+'/googleanalytics/ffffff',                        env:'GOOGLE_ANALYTICS_MEASUREMENT_ID' },
+    { key:'metaads',      name:'Meta Ads',          desc:'Facebook/Instagram広告',           logo: SI+'/meta/ffffff',                                   env:'META_ADS_ACCESS_TOKEN' },
+    { key:'tiktokads',    name:'TikTok Ads',        desc:'TikTok広告',                        logo: SI+'/tiktok/ffffff',                                 env:'TIKTOK_ADS_ACCESS_TOKEN' },
+  ]},
+  { id: 'ecommerce', label: 'E-Commerce & Billing', emoji: '🛒', jp: false, tools: [
+    { key:'stripe',       name:'Stripe',            desc:'決済処理',                          logo: SI+'/stripe/ffffff',                                 env:'STRIPE_SECRET_KEY' },
+    { key:'shopify',      name:'Shopify',           desc:'ECサイト構築・管理',               logo: SI+'/shopify/ffffff',                                env:'SHOPIFY_ACCESS_TOKEN' },
+    { key:'square',       name:'Square',            desc:'POS・決済',                         logo: SI+'/square/ffffff',                                 env:'SQUARE_ACCESS_TOKEN' },
+    { key:'paypay',       name:'PayPay',            desc:'QRコード決済（日本）',              logo: IC+'/material-symbols:payments.svg?color=ffffff',    env:'PAYPAY_API_KEY' },
+    { key:'stores',       name:'STORES',            desc:'ネットショップ（日本）',            logo: IC+'/material-symbols:storefront.svg?color=ffffff',  env:'STORES_ACCESS_TOKEN' },
+  ]},
+  { id: 'design', label: 'Design & Media', emoji: '🎨', jp: false, tools: [
+    { key:'figma',        name:'Figma',             desc:'UIデザイン',                        logo: SI+'/figma/ffffff',                                  env:'FIGMA_ACCESS_TOKEN' },
+    { key:'canva',        name:'Canva',             desc:'グラフィックデザイン',              logo: SI+'/canva/ffffff',                                  env:'CANVA_CLIENT_ID' },
+  ]},
+  { id: 'automation', label: 'Automation', emoji: '⚡', jp: false, tools: [
+    { key:'zapier',       name:'Zapier',            desc:'ワークフロー自動化',                logo: SI+'/zapier/ffffff',                                 env:'ZAPIER_API_KEY' },
+    { key:'make',         name:'Make',              desc:'ワークフロー自動化',                logo: SI+'/make/ffffff',                                   env:'MAKE_API_KEY' },
+    { key:'n8n',          name:'n8n',               desc:'セルフホスト自動化',                logo: SI+'/n8n/ffffff',                                    env:'N8N_API_KEY' },
+  ]},
+  { id: 'japan', label: '日本特化ツール', emoji: '🇯🇵', jp: true, tools: [
+    { key:'backlog',      name:'Backlog',           desc:'プロジェクト管理',                  logo: IC+'/material-symbols:assignment.svg?color=ffffff',  env:'BACKLOG_API_KEY' },
+    { key:'chatwork',     name:'Chatwork',          desc:'ビジネスチャット',                  logo: IC+'/material-symbols:chat.svg?color=ffffff',        env:'CHATWORK_API_KEY' },
+    { key:'kintone',      name:'kintone',           desc:'業務アプリ（Cybozu）',              logo: IC+'/material-symbols:apps.svg?color=ffffff',        env:'KINTONE_API_TOKEN' },
+    { key:'cybozu',       name:'Cybozu Garoon',     desc:'グループウェア',                    logo: IC+'/material-symbols:groups.svg?color=ffffff',      env:'CYBOZU_DOMAIN' },
+    { key:'freee',        name:'Freee 会計',        desc:'クラウド会計',                      logo: IC+'/material-symbols:account-balance.svg?color=ffffff', env:'FREEE_CLIENT_ID' },
+    { key:'freeehr',      name:'Freee HR',          desc:'給与・人事',                        logo: IC+'/material-symbols:person.svg?color=ffffff',      env:'FREEE_CLIENT_ID' },
+    { key:'freeesign',    name:'Freee Sign',        desc:'電子署名',                          logo: IC+'/material-symbols:draw.svg?color=ffffff',        env:'FREEE_SIGN_API_KEY' },
+    { key:'moneyforward', name:'Money Forward',     desc:'クラウド会計',                      logo: IC+'/material-symbols:currency-yen.svg?color=ffffff', env:'MONEYFORWARD_ACCESS_TOKEN' },
+    { key:'mfpayroll',    name:'MF給与',            desc:'給与計算',                          logo: IC+'/material-symbols:payments.svg?color=ffffff',    env:'MONEYFORWARD_ACCESS_TOKEN' },
+    { key:'yayoi',        name:'弥生会計',          desc:'会計ソフト',                        logo: IC+'/material-symbols:calculate.svg?color=ffffff',   env:'YAYOI_CLIENT_ID' },
+    { key:'smarthr',      name:'SmartHR',           desc:'人事・労務',                        logo: IC+'/material-symbols:people.svg?color=ffffff',      env:'SMARTHR_ACCESS_TOKEN' },
+    { key:'jobcan',       name:'Jobcan',            desc:'勤怠管理',                          logo: IC+'/material-symbols:schedule.svg?color=ffffff',    env:'JOBCAN_API_KEY' },
+    { key:'talentio',     name:'Talentio',          desc:'採用管理',                          logo: IC+'/material-symbols:work.svg?color=ffffff',        env:'TALENTIO_API_KEY' },
+    { key:'wantedly',     name:'Wantedly',          desc:'採用プラットフォーム',              logo: IC+'/material-symbols:star.svg?color=ffffff',        env:'WANTEDLY_CLIENT_ID' },
+    { key:'rakumo',       name:'Rakumo',            desc:'Google Workspace連携',              logo: IC+'/material-symbols:cloud.svg?color=ffffff',       env:'RAKUMO_CLIENT_ID' },
+    { key:'receptionist', name:'RECEPTIONIST',      desc:'受付システム',                      logo: IC+'/material-symbols:door-front.svg?color=ffffff',  env:'RECEPTIONIST_API_KEY' },
+    { key:'gmoagree',     name:'GMO電子契約',       desc:'電子契約',                          logo: IC+'/material-symbols:description.svg?color=ffffff', env:'GMOAGREE_API_KEY' },
+    { key:'cloudsign',    name:'CloudSign',         desc:'電子署名',                          logo: IC+'/material-symbols:verified.svg?color=ffffff',    env:'CLOUDSIGN_API_KEY' },
+    { key:'docusign',     name:'DocuSign',          desc:'電子署名（グローバル）',            logo: SI+'/docusign/ffffff',                               env:'DOCUSIGN_ACCESS_TOKEN' },
+    { key:'lineworks',    name:'LINE WORKS',        desc:'ビジネスチャット',                  logo: SI+'/line/ffffff',                                   env:'LINEWORKS_CLIENT_ID' },
+    { key:'lstep',        name:'Lステップ',         desc:'LINE自動化（Webhook受信）',         logo: SI+'/line/ffffff',                                   env:'LSTEP_WEBHOOK_SECRET' },
+    { key:'elme',         name:'エルメ',            desc:'LINE自動化（Webhook受信）',         logo: SI+'/line/ffffff',                                   env:'ELME_WEBHOOK_SECRET' },
+    { key:'utage',        name:'Utage',             desc:'マーケティング一括管理',            logo: IC+'/material-symbols:rocket-launch.svg?color=ffffff', env:'UTAGE_WEBHOOK_SECRET' },
+    { key:'lmessage',     name:'Lメッセージ',       desc:'LINE配信（Webhook受信）',           logo: SI+'/line/ffffff',                                   env:'LMESSAGE_WEBHOOK_SECRET' },
+    { key:'sansan',       name:'Sansan',            desc:'名刺管理',                          logo: IC+'/material-symbols:badge.svg?color=ffffff',       env:'SANSAN_API_KEY' },
+    { key:'kingofthyme',  name:'King of Time',      desc:'勤怠管理',                          logo: IC+'/material-symbols:timer.svg?color=ffffff',       env:'KING_OF_TIME_CLIENT_ID' },
+  ]},
+];
+
+var STATUS = {};
+var activeFilter = 'all';
+
+function setFilter(f, btn) {
+  activeFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  filterAll();
+}
+
+function filterAll() {
+  var q = document.getElementById('search').value.toLowerCase();
+  var anyVisible = false;
+  CATS.forEach(function(cat) {
+    var section = document.getElementById('sec-' + cat.id);
+    if (!section) return;
+    var cards = section.querySelectorAll('.card');
+    var visCount = 0;
+    cards.forEach(function(card) {
+      var key = card.dataset.key;
+      var nameText = card.dataset.name.toLowerCase();
+      var descText = card.dataset.desc.toLowerCase();
+      var matchSearch = !q || nameText.includes(q) || descText.includes(q) || key.includes(q);
+      var connected = STATUS[key];
+      var matchFilter = activeFilter === 'all'
+        || (activeFilter === 'connected' && connected)
+        || (activeFilter === 'pending' && !connected)
+        || (activeFilter === 'japan' && cat.jp);
+      if (matchSearch && matchFilter) {
+        card.style.display = '';
+        visCount++;
+        anyVisible = true;
+      } else {
+        card.style.display = 'none';
       }
+    });
+    var secEl = document.getElementById('section-' + cat.id);
+    if (secEl) secEl.style.display = visCount > 0 ? '' : 'none';
+    var countEl = document.getElementById('count-' + cat.id);
+    if (countEl) countEl.textContent = visCount;
+  });
+  document.getElementById('no-results').classList.toggle('show', !anyVisible);
+}
 
-      async function bootstrap() {
-        const res = await fetch('/api/integrations/status');
-        const status = await res.json();
-        renderCards('ai-grid', INTEGRATIONS.ai, status);
-        renderCards('billing-grid', INTEGRATIONS.billing, status);
-        renderCards('productivity-grid', INTEGRATIONS.productivity, status);
-        renderCards('design-grid', INTEGRATIONS.design, status);
-      }
+function renderSections(status) {
+  STATUS = status;
+  var root = document.getElementById('sections-root');
+  var html = '';
+  var totalConnected = 0;
+  var totalAll = 0;
 
-      bootstrap().catch(console.error);
-    </script>
-  </body>
+  CATS.forEach(function(cat) {
+    var connCount = cat.tools.filter(function(t) { return status[t.key]; }).length;
+    var totalCount = cat.tools.length;
+    totalConnected += connCount;
+    totalAll += totalCount;
+
+    html += '<div class="section" id="section-' + cat.id + '">';
+    html += '<div class="section-head">';
+    html += '<span style="font-size:1rem">' + cat.emoji + '</span>';
+    html += '<span class="section-label">' + cat.label + '</span>';
+    html += '<span class="section-count" id="count-' + cat.id + '">' + totalCount + '</span>';
+    if (cat.jp) html += '<span class="section-jp-badge">🇯🇵 Japan</span>';
+    html += '</div><div class="grid" id="sec-' + cat.id + '">';
+
+    cat.tools.forEach(function(tool) {
+      var ok = status[tool.key];
+      html += '<div class="card' + (ok ? ' connected' : '') + '" data-key="' + tool.key + '" data-name="' + tool.name + '" data-desc="' + tool.desc + '">';
+      html += '<div class="card-logo"><img src="' + tool.logo + '" alt="' + tool.name + '" onerror="this.style.display=&quot;none&quot;" /></div>';
+      html += '<div class="card-body">';
+      html += '<div class="card-name">' + tool.name + '</div>';
+      html += '<div class="card-desc">' + tool.desc + '</div>';
+      html += '<span class="badge ' + (ok ? 'badge-ok' : 'badge-ng') + '">' + (ok ? '接続済み' : '未設定') + '</span>';
+      html += '<div class="card-env">' + tool.env + '</div>';
+      html += '</div></div>';
+    });
+
+    html += '</div></div>';
+  });
+
+  root.innerHTML = html;
+
+  // Update stats
+  document.getElementById('stat-total').textContent = totalAll;
+  document.getElementById('stat-connected').textContent = totalConnected;
+  document.getElementById('stat-pending').textContent = totalAll - totalConnected;
+}
+
+async function bootstrap() {
+  try {
+    var res = await fetch('/api/integrations/status');
+    var status = await res.json();
+    renderSections(status);
+  } catch(e) {
+    document.getElementById('sections-root').innerHTML = '<p style="color:var(--muted);padding:40px">読み込みに失敗しました。</p>';
+  }
+}
+
+bootstrap();
+</script>
+</body>
 </html>`;
 }
 
@@ -2508,21 +2795,130 @@ export function startApiServer(): http.Server {
 
     if (method === 'GET' && url.pathname === '/api/integrations/status') {
       try {
-        const status = {
-          openai: Boolean(process.env.OPENAI_API_KEY?.trim()),
-          anthropic: Boolean(process.env.ANTHROPIC_API_KEY?.trim()),
-          gemini: Boolean(process.env.GEMINI_API_KEY?.trim()),
-          stripe: Boolean(process.env.STRIPE_SECRET_KEY?.trim()),
-          notion: Boolean(process.env.NOTION_API_KEY?.trim()),
-          github: Boolean(process.env.GITHUB_TOKEN?.trim()),
-          google: Boolean(process.env.GOOGLE_CLIENT_ID?.trim()),
-          hubspot: Boolean(process.env.HUBSPOT_ACCESS_TOKEN?.trim()),
-          vercel: Boolean(process.env.VERCEL_TOKEN?.trim()),
-          fireflies: Boolean(process.env.FIREFLIES_API_KEY?.trim()),
-  canva:      Boolean(process.env.CANVA_CLIENT_ID?.trim()),
-  figma:      Boolean(process.env.FIGMA_ACCESS_TOKEN?.trim()),
-  fal:        Boolean(process.env.FAL_KEY?.trim()),
-};
+        const e = process.env;
+        const status: Record<string, boolean> = {
+          // AI Models
+          openai:           Boolean(e.OPENAI_API_KEY?.trim()),
+          anthropic:        Boolean(e.ANTHROPIC_API_KEY?.trim()),
+          gemini:           Boolean(e.GEMINI_API_KEY?.trim()),
+          fal:              Boolean(e.FAL_KEY?.trim()),
+          // Communication
+          slack:            Boolean(e.SLACK_BOT_TOKEN?.trim()),
+          teams:            Boolean(e.TEAMS_WEBHOOK_URL?.trim()),
+          zoom:             Boolean(e.ZOOM_CLIENT_ID?.trim()),
+          line:             Boolean(e.LINE_CHANNEL_ACCESS_TOKEN?.trim()),
+          twilio:           Boolean(e.TWILIO_ACCOUNT_SID?.trim()),
+          vonage:           Boolean(e.VONAGE_API_KEY?.trim()),
+          fireflies:        Boolean(e.FIREFLIES_API_KEY?.trim()),
+          lineworks:        Boolean(e.LINEWORKS_CLIENT_ID?.trim()),
+          loom:             Boolean(e.LOOM_API_KEY?.trim()),
+          // Productivity
+          notion:           Boolean(e.NOTION_API_KEY?.trim()),
+          google:           Boolean(e.GOOGLE_CLIENT_ID?.trim()),
+          airtable:         Boolean(e.AIRTABLE_API_KEY?.trim()),
+          coda:             Boolean(e.CODA_API_TOKEN?.trim()),
+          confluence:       Boolean(e.CONFLUENCE_API_TOKEN?.trim()),
+          monday:           Boolean(e.MONDAY_API_KEY?.trim()),
+          clickup:          Boolean(e.CLICKUP_API_KEY?.trim()),
+          asana:            Boolean(e.ASANA_ACCESS_TOKEN?.trim()),
+          trello:           Boolean(e.TRELLO_API_KEY?.trim()),
+          jira:             Boolean(e.JIRA_API_TOKEN?.trim()),
+          linear:           Boolean(e.LINEAR_API_KEY?.trim()),
+          surveymonkey:     Boolean(e.SURVEYMONKEY_ACCESS_TOKEN?.trim()),
+          typeform:         Boolean(e.TYPEFORM_API_KEY?.trim()),
+          miro:             Boolean(e.MIRO_ACCESS_TOKEN?.trim()),
+          dropbox:          Boolean(e.DROPBOX_ACCESS_TOKEN?.trim()),
+          onedrive:         Boolean(e.ONEDRIVE_CLIENT_ID?.trim()),
+          box:              Boolean(e.BOX_CLIENT_ID?.trim()),
+          outlook:          Boolean(e.OUTLOOK_CLIENT_ID?.trim()),
+          calendly:         Boolean(e.CALENDLY_API_KEY?.trim()),
+          retool:           Boolean(e.RETOOL_API_KEY?.trim()),
+          // Development
+          github:           Boolean(e.GITHUB_TOKEN?.trim()),
+          gitlab:           Boolean(e.GITLAB_ACCESS_TOKEN?.trim()),
+          vercel:           Boolean(e.VERCEL_TOKEN?.trim()),
+          heroku:           Boolean(e.HEROKU_API_KEY?.trim()),
+          cloudflare:       Boolean(e.CLOUDFLARE_API_TOKEN?.trim()),
+          awss3:            Boolean(e.AWS_ACCESS_KEY_ID?.trim()),
+          cloudwatch:       Boolean(e.AWS_ACCESS_KEY_ID?.trim()),
+          circleci:         Boolean(e.CIRCLECI_TOKEN?.trim()),
+          githubactions:    Boolean(e.GITHUB_TOKEN?.trim()),
+          launchdarkly:     Boolean(e.LAUNCHDARKLY_SDK_KEY?.trim()),
+          sentry:           Boolean(e.SENTRY_DSN?.trim()),
+          datadog:          Boolean(e.DATADOG_API_KEY?.trim()),
+          pagerduty:        Boolean(e.PAGERDUTY_API_KEY?.trim()),
+          statuspage:       Boolean(e.STATUSPAGE_API_KEY?.trim()),
+          // CRM & Sales
+          hubspot:          Boolean(e.HUBSPOT_ACCESS_TOKEN?.trim()),
+          salesforce:       Boolean(e.SALESFORCE_CLIENT_ID?.trim()),
+          pipedrive:        Boolean(e.PIPEDRIVE_API_KEY?.trim()),
+          copper:           Boolean(e.COPPER_API_KEY?.trim()),
+          intercom:         Boolean(e.INTERCOM_ACCESS_TOKEN?.trim()),
+          freshdesk:        Boolean(e.FRESHDESK_API_KEY?.trim()),
+          zendesk:          Boolean(e.ZENDESK_API_TOKEN?.trim()),
+          sansan:           Boolean(e.SANSAN_API_KEY?.trim()),
+          // Marketing
+          mailchimp:        Boolean(e.MAILCHIMP_API_KEY?.trim()),
+          sendgrid:         Boolean(e.SENDGRID_API_KEY?.trim()),
+          postmark:         Boolean(e.POSTMARK_SERVER_TOKEN?.trim()),
+          brevo:            Boolean(e.BREVO_API_KEY?.trim()),
+          activecampaign:   Boolean(e.ACTIVECAMPAIGN_API_KEY?.trim()),
+          segment:          Boolean(e.SEGMENT_WRITE_KEY?.trim()),
+          mixpanel:         Boolean(e.MIXPANEL_TOKEN?.trim()),
+          amplitude:        Boolean(e.AMPLITUDE_API_KEY?.trim()),
+          googleanalytics:  Boolean(e.GOOGLE_ANALYTICS_MEASUREMENT_ID?.trim()),
+          metaads:          Boolean(e.META_ADS_ACCESS_TOKEN?.trim()),
+          tiktokads:        Boolean(e.TIKTOK_ADS_ACCESS_TOKEN?.trim()),
+          // E-Commerce
+          stripe:           Boolean(e.STRIPE_SECRET_KEY?.trim()),
+          shopify:          Boolean(e.SHOPIFY_ACCESS_TOKEN?.trim()),
+          square:           Boolean(e.SQUARE_ACCESS_TOKEN?.trim()),
+          paypay:           Boolean(e.PAYPAY_API_KEY?.trim()),
+          stores:           Boolean(e.STORES_ACCESS_TOKEN?.trim()),
+          // Design & Media
+          figma:            Boolean(e.FIGMA_ACCESS_TOKEN?.trim()),
+          canva:            Boolean(e.CANVA_CLIENT_ID?.trim()),
+          webflow:          Boolean(e.WEBFLOW_API_TOKEN?.trim()),
+          figmafiles:       Boolean(e.FIGMA_ACCESS_TOKEN?.trim()),
+          // Automation
+          zapier:           Boolean(e.ZAPIER_API_KEY?.trim()),
+          make:             Boolean(e.MAKE_API_KEY?.trim()),
+          n8n:              Boolean(e.N8N_API_KEY?.trim()),
+          // Japan Tools
+          backlog:          Boolean(e.BACKLOG_API_KEY?.trim()),
+          chatwork:         Boolean(e.CHATWORK_API_KEY?.trim()),
+          kintone:          Boolean(e.KINTONE_API_TOKEN?.trim()),
+          cybozu:           Boolean(e.CYBOZU_DOMAIN?.trim()),
+          freee:            Boolean(e.FREEE_CLIENT_ID?.trim()),
+          freeehr:          Boolean(e.FREEE_CLIENT_ID?.trim()),
+          freeesign:        Boolean(e.FREEE_SIGN_API_KEY?.trim()),
+          moneyforward:     Boolean(e.MONEYFORWARD_ACCESS_TOKEN?.trim()),
+          mfpayroll:        Boolean(e.MONEYFORWARD_ACCESS_TOKEN?.trim()),
+          yayoi:            Boolean(e.YAYOI_CLIENT_ID?.trim()),
+          smarthr:          Boolean(e.SMARTHR_ACCESS_TOKEN?.trim()),
+          jobcan:           Boolean(e.JOBCAN_API_KEY?.trim()),
+          talentio:         Boolean(e.TALENTIO_API_KEY?.trim()),
+          wantedly:         Boolean(e.WANTEDLY_CLIENT_ID?.trim()),
+          rakumo:           Boolean(e.RAKUMO_CLIENT_ID?.trim()),
+          receptionist:     Boolean(e.RECEPTIONIST_API_KEY?.trim()),
+          gmoagree:         Boolean(e.GMOAGREE_API_KEY?.trim()),
+          cloudsign:        Boolean(e.CLOUDSIGN_API_KEY?.trim()),
+          docusign:         Boolean(e.DOCUSIGN_ACCESS_TOKEN?.trim()),
+          lstep:            Boolean(e.LSTEP_WEBHOOK_SECRET?.trim()),
+          elme:             Boolean(e.ELME_WEBHOOK_SECRET?.trim()),
+          utage:            Boolean(e.UTAGE_WEBHOOK_SECRET?.trim()),
+          lmessage:         Boolean(e.LMESSAGE_WEBHOOK_SECRET?.trim()),
+          // Other
+          asanatasks:       Boolean(e.ASANA_ACCESS_TOKEN?.trim()),
+          hubspotcrm:       Boolean(e.HUBSPOT_ACCESS_TOKEN?.trim()),
+          discordwebhook:   Boolean(e.DISCORD_WEBHOOK_URL?.trim()),
+          drive:            Boolean(e.GOOGLE_CLIENT_ID?.trim()),
+          sheets:           Boolean(e.GOOGLE_CLIENT_ID?.trim()),
+          gmail:            Boolean(e.GOOGLE_CLIENT_ID?.trim()),
+          kingofthyme:      Boolean(e.KING_OF_TIME_CLIENT_ID?.trim()),
+          openaiapi:        Boolean(e.OPENAI_API_KEY?.trim()),
+          anthropicapi:     Boolean(e.ANTHROPIC_API_KEY?.trim()),
+        };
         sendJson(res, 200, status);
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error';

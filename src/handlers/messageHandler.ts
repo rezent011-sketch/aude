@@ -8,24 +8,29 @@ import {
 import { creditsManager } from '../credits/manager';
 import UserRepository from '../db/userRepository';
 import GuildRepository from '../db/guildRepository';
-import { ModelChoice, resolveModelChoice, routeToLLM } from '../llm/router';
+import { ModelChoice, resolveModelChoice } from '../llm/router';
 import { replyToMessageWithError } from '../utils/errorHandler';
 import { buildMemoryContext, extractMemoriesFromConversation } from '../services/memoryService';
 import { extractAndSaveTeamMemory } from '../services/teamMemoryService';
+import { routeNaturalLanguageMessage } from '../services/naturalLanguageRouter';
+
+function normalizePrompt(rawContent: string, botUserId?: string): string {
+  const content = rawContent.trim();
+  if (!botUserId) {
+    return content;
+  }
+
+  return content
+    .replace(new RegExp(`<@!?${botUserId}>`, 'g'), '')
+    .trim();
+}
 
 export async function handleMessage(message: Message, client: Client): Promise<void> {
   if (message.author.bot) {
     return;
   }
 
-  const isDM = message.channel.isDMBased();
-  const isMentioned = client.user ? message.mentions.has(client.user) : false;
-
-  if (!isDM && !isMentioned) {
-    return;
-  }
-
-  const prompt = message.content.trim();
+  const prompt = normalizePrompt(message.content, client.user?.id);
   if (!prompt) {
     return;
   }
@@ -86,14 +91,14 @@ export async function handleMessage(message: Message, client: Client): Promise<v
 
     let result: string;
     try {
-      result = await routeToLLM(
+      result = await routeNaturalLanguageMessage({
         prompt,
         selectedModel,
         messages,
         channelId,
-        memoryContext || undefined,
-        guildId ?? undefined
-      );
+        guildId: guildId ?? undefined,
+        memoryContext: memoryContext || undefined,
+      });
     } finally {
       clearInterval(typingInterval);
     }
