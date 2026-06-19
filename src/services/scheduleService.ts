@@ -2,11 +2,15 @@ import { Client } from 'discord.js';
 import cron, { ScheduledTask } from 'node-cron';
 import ScheduleRepository, { ScheduleRecord } from '../db/scheduleRepository';
 import UserRepository from '../db/userRepository';
-import { routeToLLM } from '../llm/router';
+import { parseJapaneseCron, ParsedCronResult } from './cronParser';
 import { splitMessage, truncate } from '../utils/discord';
 
 const DEFAULT_TIMEZONE = process.env.SCHEDULE_TIMEZONE ?? 'Asia/Tokyo';
 const RESULT_CHUNK_SIZE = 1800;
+
+type SendableChannel = {
+  send(content: string): Promise<unknown>;
+};
 
 function toIsoString(date: Date | null): string | null {
   return date ? date.toISOString() : null;
@@ -23,10 +27,6 @@ function formatDateTime(value: string | null): string {
   });
 }
 
-type SendableChannel = {
-  send(content: string): Promise<unknown>;
-};
-
 function isTextChannel(channel: unknown): channel is SendableChannel {
   return Boolean(
     channel &&
@@ -41,7 +41,9 @@ function isTextChannel(channel: unknown): channel is SendableChannel {
 
 class ScheduleService {
   private client: Client | null = null;
+
   private initialized = false;
+
   private tasks = new Map<number, ScheduledTask>();
 
   async initialize(client: Client): Promise<void> {
@@ -55,6 +57,7 @@ class ScheduleService {
 
     const schedules = ScheduleRepository.listActive();
     let loadedCount = 0;
+
     for (const schedule of schedules) {
       try {
         this.attachCronTask(schedule);
@@ -68,9 +71,28 @@ class ScheduleService {
     console.log(`[Schedule] Loaded ${loadedCount} active schedules`);
   }
 
-  listSchedules(discordUserId: string, username: string, guildId: string): ScheduleRecord[] {
-    const user = UserRepository.getOrCreateUser(discordUserId, username);
-    return ScheduleRepository.listByUser(user.id, guildId);
+  parseScheduleInput(input: string): ParsedCronResult {
+    return parseJapaneseCron(input);
+  }
+
+  addSchedule(input: {
+    discordUserId: string;
+    username: string;
+    guildId: string;
+    channelId: string;
+    schedule: string;
+    task: string;
+  }): ScheduleRecord {
+    const parsed = this.parseScheduleInput(input.schedule);
+
+    return this.createSchedule({
+      discordUserId: input.discordUserId,
+      username: input.username,
+      guildId: input.guildId,
+      channelId: input.channelId,
+      cronExpr: parsed.cronExpr,
+      task: input.task,
+    });
   }
 
   createSchedule(input: {
@@ -81,6 +103,10 @@ class ScheduleService {
     cronExpr: string;
     task: string;
   }): ScheduleRecord {
+    if (!input.task.trim()) {
+      throw new Error('タスク内容を入力してください。');
+    }
+
     if (!cron.validate(input.cronExpr)) {
       throw new Error(
         'cron式の形式が正しくありません。5フィールドまたは6フィールドのcron式を指定してください。'
@@ -105,21 +131,36 @@ class ScheduleService {
     }
   }
 
-  pauseSchedule(scheduleId: number, discordUserId: string, username: string, guildId: string): ScheduleRecord {
+  listSchedules(discordUserId: string, username: string, guildId: string): ScheduleRecord[] {
+    const user = UserRepository.getOrCreateUser(discordUserId, username);
+    return ScheduleRepository.listByUser(user.id, guildId);
+  }
+
+  pauseSchedule(
+    scheduleId: number,
+    discordUserId: string,
+    username: string,
+    guildId: string
+  ): ScheduleRecord {
     const schedule = this.getOwnedSchedule(scheduleId, discordUserId, username, guildId);
     this.detachCronTask(schedule.id);
     ScheduleRepository.updateStatus(schedule.id, false, null);
-
     return this.requireSchedule(schedule.id);
   }
 
-  resumeSchedule(scheduleId: number, discordUserId: string, username: string, guildId: string): ScheduleRecord {
+  resumeSchedule(
+    scheduleId: number,
+    discordUserId: string,
+    username: string,
+    guildId: string
+  ): ScheduleRecord {
     const schedule = this.getOwnedSchedule(scheduleId, discordUserId, username, guildId);
     if (schedule.isActive) {
       return schedule;
     }
 
     ScheduleRepository.updateStatus(schedule.id, true, null);
+
     try {
       return this.attachCronTask(this.requireSchedule(schedule.id));
     } catch (error) {
@@ -128,7 +169,12 @@ class ScheduleService {
     }
   }
 
-  deleteSchedule(scheduleId: number, discordUserId: string, username: string, guildId: string): ScheduleRecord {
+  deleteSchedule(
+    scheduleId: number,
+    discordUserId: string,
+    username: string,
+    guildId: string
+  ): ScheduleRecord {
     const schedule = this.getOwnedSchedule(scheduleId, discordUserId, username, guildId);
     this.detachCronTask(schedule.id);
     ScheduleRepository.delete(schedule.id);
@@ -153,9 +199,11 @@ class ScheduleService {
 
   private requireSchedule(scheduleId: number): ScheduleRecord {
     const schedule = ScheduleRepository.getById(scheduleId);
+
     if (!schedule) {
       throw new Error(`ID ${scheduleId} のスケジュールが見つかりません。`);
     }
+
     return schedule;
   }
 
@@ -179,8 +227,8 @@ class ScheduleService {
     );
 
     this.tasks.set(schedule.id, task);
-
     ScheduleRepository.updateStatus(schedule.id, true, toIsoString(task.getNextRun()));
+
     return this.requireSchedule(schedule.id);
   }
 
@@ -205,51 +253,33 @@ class ScheduleService {
     const currentTask = this.tasks.get(scheduleId) ?? null;
 
     try {
-      const result = await routeToLLM(
-        `以下はDiscord上で定期実行されるタスクです。
-
-タスク内容:
-${schedule.task}
-
-実行ルール:
-        - 依頼をそのまま実行してください
-        - 回答はそのままDiscordに投稿されます
-        - 余計な前置きは避けて、読みやすく整理してください`,
-        'auto',
-        undefined,
-        schedule.channelId,
-        undefined,
-        schedule.guildId
-      );
-
       ScheduleRepository.updateExecutionState(
         schedule.id,
         startedAt.toISOString(),
         toIsoString(currentTask?.getNextRun() ?? null)
       );
-
-      await this.postScheduleResult(schedule, result);
+      await this.postScheduleMessage(schedule);
     } catch (error) {
       ScheduleRepository.updateExecutionState(
         schedule.id,
         startedAt.toISOString(),
         toIsoString(currentTask?.getNextRun() ?? null)
       );
-
-      console.error(`[Schedule] Execution failed for #${schedule.id}:`, error);
+      console.error(`[Schedule] Execution failed #${schedule.id}:`, error);
       await this.postScheduleFailure(schedule, error);
     }
   }
 
-  private async postScheduleResult(schedule: ScheduleRecord, result: string): Promise<void> {
+  private async postScheduleMessage(schedule: ScheduleRecord): Promise<void> {
     const channel = await this.resolveChannel(schedule.channelId);
     if (!channel) {
       return;
     }
 
-    const parts = splitMessage(result, RESULT_CHUNK_SIZE);
+    const body = `⏰ ${schedule.task}`;
+    const parts = splitMessage(body, RESULT_CHUNK_SIZE);
     const header = [
-      `⏰ 定期タスク #${schedule.id} を実行しました`,
+      `⏰ スケジュール #${schedule.id} を実行しました`,
       `内容: ${truncate(schedule.task, 120)}`,
       `次回予定: ${formatDateTime(this.requireSchedule(schedule.id).nextRun)}`,
       '',

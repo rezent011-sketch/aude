@@ -21,7 +21,9 @@ function formatDateTime(value: string | null): string {
   });
 }
 
-function requireGuildContext(interaction: ChatInputCommandInteraction): { guildId: string; channelId: string } {
+function requireGuildContext(
+  interaction: ChatInputCommandInteraction
+): { guildId: string; channelId: string } {
   if (!interaction.guildId || !interaction.channelId) {
     throw new Error('このコマンドはサーバーチャンネルでのみ利用できます。');
   }
@@ -43,91 +45,61 @@ function toUserErrorMessage(error: unknown): string {
 export const scheduleCommand = {
   data: new SlashCommandBuilder()
     .setName('schedule')
-    .setDescription('定期タスクを登録・管理します')
+    .setDescription('定期メッセージを登録・管理します')
     .addSubcommand((subcommand) =>
       subcommand
-        .setName('set')
-        .setDescription('cron式で定期タスクを登録します')
+        .setName('add')
+        .setDescription('自然言語またはcron式でスケジュールを登録します')
         .addStringOption((option) =>
           option
-            .setName('cron')
-            .setDescription('cron式（例: 0 9 * * *）')
+            .setName('when')
+            .setDescription('例: 毎日9時 / 毎週月曜10時 / 0 9 * * *')
             .setRequired(true)
         )
         .addStringOption((option) =>
           option
             .setName('task')
-            .setDescription('定期的に実行したい内容')
+            .setDescription('定期実行時に送信するメッセージ')
             .setRequired(true)
             .setMaxLength(MAX_TASK_LENGTH)
         )
     )
     .addSubcommand((subcommand) =>
-      subcommand
-        .setName('list')
-        .setDescription('登録済みスケジュールを一覧表示します')
+      subcommand.setName('list').setDescription('登録済みスケジュールを一覧表示します')
     )
     .addSubcommand((subcommand) =>
       subcommand
         .setName('delete')
         .setDescription('スケジュールを削除します')
         .addIntegerOption((option) =>
-          option
-            .setName('id')
-            .setDescription('削除するスケジュールID')
-            .setRequired(true)
-            .setMinValue(1)
-        )
-    )
-    .addSubcommand((subcommand) =>
-      subcommand
-        .setName('pause')
-        .setDescription('スケジュールを一時停止します')
-        .addIntegerOption((option) =>
-          option
-            .setName('id')
-            .setDescription('一時停止するスケジュールID')
-            .setRequired(true)
-            .setMinValue(1)
-        )
-    )
-    .addSubcommand((subcommand) =>
-      subcommand
-        .setName('resume')
-        .setDescription('スケジュールを再開します')
-        .addIntegerOption((option) =>
-          option
-            .setName('id')
-            .setDescription('再開するスケジュールID')
-            .setRequired(true)
-            .setMinValue(1)
+          option.setName('id').setDescription('削除するスケジュールID').setRequired(true)
         )
     ),
-
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     try {
       const { guildId, channelId } = requireGuildContext(interaction);
       const subcommand = interaction.options.getSubcommand();
-      const username = interaction.user.username;
       const discordUserId = interaction.user.id;
+      const username = interaction.user.username;
 
-      if (subcommand === 'set') {
-        const cronExpr = interaction.options.getString('cron', true).trim();
+      if (subcommand === 'add') {
+        const when = interaction.options.getString('when', true).trim();
         const task = interaction.options.getString('task', true).trim();
-
-        const schedule = scheduleService.createSchedule({
+        const parsed = scheduleService.parseScheduleInput(when);
+        const schedule = scheduleService.addSchedule({
           discordUserId,
           username,
           guildId,
           channelId,
-          cronExpr,
+          schedule: when,
           task,
         });
 
         await interaction.reply({
           content: [
             `✅ スケジュール #${schedule.id} を登録しました。`,
-            `cron式: \`${schedule.cronExpr}\``,
+            `指定: ${when}`,
+            `cron式: \`${parsed.cronExpr}\``,
             `内容: ${truncate(schedule.task, 200)}`,
             `次回実行予定: ${formatDateTime(schedule.nextRun)}`,
           ].join('\n'),
@@ -170,38 +142,13 @@ export const scheduleCommand = {
       }
 
       const id = interaction.options.getInteger('id', true);
-
-      if (subcommand === 'delete') {
-        const deleted = scheduleService.deleteSchedule(id, discordUserId, username, guildId);
-        await interaction.reply({
-          content: `🗑️ スケジュール #${deleted.id} を削除しました。`,
-          flags: MessageFlags.Ephemeral,
-        });
-        return;
-      }
-
-      if (subcommand === 'pause') {
-        const paused = scheduleService.pauseSchedule(id, discordUserId, username, guildId);
-        await interaction.reply({
-          content: `⏸️ スケジュール #${paused.id} を一時停止しました。`,
-          flags: MessageFlags.Ephemeral,
-        });
-        return;
-      }
-
-      if (subcommand === 'resume') {
-        const resumed = scheduleService.resumeSchedule(id, discordUserId, username, guildId);
-        await interaction.reply({
-          content: [
-            `▶️ スケジュール #${resumed.id} を再開しました。`,
-            `次回実行予定: ${formatDateTime(resumed.nextRun)}`,
-          ].join('\n'),
-          flags: MessageFlags.Ephemeral,
-        });
-      }
+      const deleted = scheduleService.deleteSchedule(id, discordUserId, username, guildId);
+      await interaction.reply({
+        content: `🗑️ スケジュール #${deleted.id} を削除しました。`,
+        flags: MessageFlags.Ephemeral,
+      });
     } catch (error) {
       const message = toUserErrorMessage(error);
-
       if (interaction.replied || interaction.deferred) {
         await interaction.followUp({ content: `⚠️ ${message}`, flags: MessageFlags.Ephemeral });
         return;
