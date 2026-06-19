@@ -15,6 +15,7 @@ import { scheduleCommand } from '../commands/schedule';
 import { notionCommand } from '../commands/notion';
 import { googleCommand } from '../commands/google';
 import { githubCommand } from '../commands/github';
+import { connectCommand } from '../commands/connect';
 import { gitlabCommand } from '../commands/gitlab';
 import { linearCommand } from '../commands/linear';
 import { jiraCommand } from '../commands/jira';
@@ -157,6 +158,7 @@ const commands: Command[] = [
   exportCommand,
   reportCommand,
   scheduleCommand,
+  connectCommand,
   notionCommand,
   googleCommand,
   githubCommand,

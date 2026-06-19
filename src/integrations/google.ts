@@ -3,6 +3,7 @@ import { fetchJson } from './http';
 
 const DEFAULT_TIMEZONE = process.env.GOOGLE_CALENDAR_TIMEZONE ?? 'Asia/Tokyo';
 const DEFAULT_EVENT_DURATION_MS = 60 * 60 * 1000;
+const DEFAULT_CALENDAR_ID = 'primary';
 
 type GoogleTokenResponse = {
   access_token: string;
@@ -44,20 +45,44 @@ export type CreatedGoogleCalendarEvent = {
   end: string;
 };
 
+export type GoogleCalendarListOptions = {
+  calendarId?: string;
+  timeMin?: string;
+  timeMax?: string;
+  maxResults?: number;
+  query?: string;
+};
+
+export type GoogleCalendarCreateInput = {
+  title: string;
+  start: string;
+  end?: string;
+  description?: string;
+  calendarId?: string;
+  timeZone?: string;
+};
+
 function getTimeZoneOffset(timeZone: string, date: Date): string {
   const formatter = new Intl.DateTimeFormat('en-US', {
     timeZone,
     timeZoneName: 'shortOffset',
   });
-  const zonePart = formatter.formatToParts(date).find((part) => part.type === 'timeZoneName')?.value;
+  const zonePart = formatter
+    .formatToParts(date)
+    .find((part) => part.type === 'timeZoneName')?.value;
 
   if (!zonePart) {
-    throw new IntegrationError(`Google Calendar用のタイムゾーン ${timeZone} を解釈できませんでした。`);
+    throw new IntegrationError(
+      `Google Calendar用のタイムゾーン ${timeZone} を解釈できませんでした。`
+    );
   }
 
   const match = zonePart.match(/GMT([+-]\d{1,2})(?::?(\d{2}))?/);
+
   if (!match) {
-    throw new IntegrationError(`Google Calendar用のタイムゾーンオフセットを取得できませんでした: ${zonePart}`);
+    throw new IntegrationError(
+      `Google Calendar用のタイムゾーンオフセットを取得できませんでした: ${zonePart}`
+    );
   }
 
   const hours = match[1];
@@ -68,7 +93,10 @@ function getTimeZoneOffset(timeZone: string, date: Date): string {
   return `${sign}${normalizedHours}:${minutes}`;
 }
 
-function getDatePartsInTimeZone(date: Date, timeZone: string): { year: string; month: string; day: string } {
+function getDatePartsInTimeZone(
+  date: Date,
+  timeZone: string
+): { year: string; month: string; day: string } {
   const formatter = new Intl.DateTimeFormat('en-CA', {
     timeZone,
     year: 'numeric',
@@ -76,7 +104,6 @@ function getDatePartsInTimeZone(date: Date, timeZone: string): { year: string; m
     day: '2-digit',
   });
   const parts = formatter.formatToParts(date);
-
   const year = parts.find((part) => part.type === 'year')?.value;
   const month = parts.find((part) => part.type === 'month')?.value;
   const day = parts.find((part) => part.type === 'day')?.value;
@@ -91,7 +118,6 @@ function getDatePartsInTimeZone(date: Date, timeZone: string): { year: string; m
 function buildZonedDateTime(date: Date, timeZone: string, time: string): Date {
   const { year, month, day } = getDatePartsInTimeZone(date, timeZone);
   const offset = getTimeZoneOffset(timeZone, date);
-
   return new Date(`${year}-${month}-${day}T${time}:00${offset}`);
 }
 
@@ -111,17 +137,17 @@ function parseDateTimeInput(value: string, timeZone: string): Date {
 
   if (/([zZ]|[+-]\d{2}:\d{2})$/.test(trimmed)) {
     const parsed = new Date(trimmed);
+
     if (Number.isNaN(parsed.getTime())) {
       throw new IntegrationError(
         '日時を解釈できませんでした。`2026-05-17 14:00` または ISO 8601 形式で入力してください。'
       );
     }
+
     return parsed;
   }
 
-  const match = trimmed.match(
-    /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})$/
-  );
+  const match = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})$/);
 
   if (!match) {
     throw new IntegrationError(
@@ -130,7 +156,10 @@ function parseDateTimeInput(value: string, timeZone: string): Date {
   }
 
   const [, year, month, day, hour, minute] = match;
-  const offset = getTimeZoneOffset(timeZone, new Date(`${year}-${month}-${day}T12:00:00Z`));
+  const offset = getTimeZoneOffset(
+    timeZone,
+    new Date(`${year}-${month}-${day}T12:00:00Z`)
+  );
   const parsed = new Date(`${year}-${month}-${day}T${hour}:${minute}:00${offset}`);
 
   if (Number.isNaN(parsed.getTime())) {
@@ -154,11 +183,21 @@ function formatEventTime(eventDateTime?: GoogleCalendarDateTime): string | null 
   return eventDateTime.dateTime ?? null;
 }
 
+function mapCalendarEvent(event: GoogleCalendarEventResponse): GoogleCalendarEvent {
+  return {
+    id: event.id,
+    title: event.summary?.trim() || '無題',
+    url: event.htmlLink ?? null,
+    start: formatEventTime(event.start),
+    end: formatEventTime(event.end),
+    isAllDay: Boolean(event.start?.date && !event.start.dateTime),
+  };
+}
+
 async function getAccessToken(): Promise<string> {
   const clientId = requireEnvVar('GOOGLE_CLIENT_ID', 'Google');
   const clientSecret = requireEnvVar('GOOGLE_CLIENT_SECRET', 'Google');
   const refreshToken = requireEnvVar('GOOGLE_REFRESH_TOKEN', 'Google');
-
   const params = new URLSearchParams({
     client_id: clientId,
     client_secret: clientSecret,
@@ -175,7 +214,7 @@ async function getAccessToken(): Promise<string> {
       },
       body: params.toString(),
     },
-    'Googleのアクセストークン取得に失敗しました。OAuth設定とリフレッシュトークンを確認してください。'
+    'Googleアクセストークンの取得に失敗しました。クライアントID・シークレット・リフレッシュトークンを確認してください。'
   );
 
   return response.access_token;
@@ -190,17 +229,25 @@ async function getHeaders(): Promise<Record<string, string>> {
   };
 }
 
-export async function listTodayCalendarEvents(): Promise<GoogleCalendarEvent[]> {
-  const { timeMin, timeMax } = getTodayRange(DEFAULT_TIMEZONE);
+export async function listCalendarEvents(
+  options: GoogleCalendarListOptions = {}
+): Promise<GoogleCalendarEvent[]> {
+  const calendarId = options.calendarId?.trim() || DEFAULT_CALENDAR_ID;
+  const todayRange = getTodayRange(DEFAULT_TIMEZONE);
   const params = new URLSearchParams({
-    timeMin,
-    timeMax,
+    timeMin: options.timeMin ?? todayRange.timeMin,
+    timeMax: options.timeMax ?? todayRange.timeMax,
     singleEvents: 'true',
     orderBy: 'startTime',
+    maxResults: String(options.maxResults ?? 10),
   });
 
+  if (options.query?.trim()) {
+    params.set('q', options.query.trim());
+  }
+
   const response = await fetchJson<GoogleCalendarEventsResponse>(
-    `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params.toString()}`,
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?${params.toString()}`,
     {
       method: 'GET',
       headers: await getHeaders(),
@@ -210,52 +257,77 @@ export async function listTodayCalendarEvents(): Promise<GoogleCalendarEvent[]> 
 
   return (response.items ?? [])
     .filter((event) => event.status !== 'cancelled')
-    .map((event) => ({
-      id: event.id,
-      title: event.summary?.trim() || '無題',
-      url: event.htmlLink ?? null,
-      start: formatEventTime(event.start),
-      end: formatEventTime(event.end),
-      isAllDay: Boolean(event.start?.date && !event.start.dateTime),
-    }));
+    .map(mapCalendarEvent);
 }
 
-export async function addCalendarEvent(
-  title: string,
-  dateTimeInput: string
+export async function listTodayCalendarEvents(): Promise<GoogleCalendarEvent[]> {
+  return listCalendarEvents();
+}
+
+export async function createCalendarEvent(
+  input: GoogleCalendarCreateInput
 ): Promise<CreatedGoogleCalendarEvent> {
-  const start = parseDateTimeInput(dateTimeInput, DEFAULT_TIMEZONE);
-  const end = new Date(start.getTime() + DEFAULT_EVENT_DURATION_MS);
+  const title = input.title.trim();
+
+  if (!title) {
+    throw new IntegrationError('イベントタイトルを入力してください。');
+  }
+
+  const timeZone = input.timeZone?.trim() || DEFAULT_TIMEZONE;
+  const start = parseDateTimeInput(input.start, timeZone);
+  const end = input.end?.trim()
+    ? parseDateTimeInput(input.end, timeZone)
+    : new Date(start.getTime() + DEFAULT_EVENT_DURATION_MS);
+  const calendarId = input.calendarId?.trim() || DEFAULT_CALENDAR_ID;
+
+  if (end.getTime() <= start.getTime()) {
+    throw new IntegrationError('終了日時は開始日時より後にしてください。');
+  }
+
   const response = await fetchJson<GoogleCalendarEventResponse>(
-    'https://www.googleapis.com/calendar/v3/calendars/primary/events',
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`,
     {
       method: 'POST',
       headers: await getHeaders(),
       body: JSON.stringify({
         summary: title,
+        description: input.description?.trim() || undefined,
         start: {
           dateTime: start.toISOString(),
-          timeZone: DEFAULT_TIMEZONE,
+          timeZone,
         },
         end: {
           dateTime: end.toISOString(),
-          timeZone: DEFAULT_TIMEZONE,
+          timeZone,
         },
       }),
     },
-    'Google Calendarへの予定追加に失敗しました。権限と日時形式を確認してください。'
+    'Google Calendarの予定作成に失敗しました。カレンダー権限と入力内容を確認してください。'
   );
 
   return {
     id: response.id,
     title: response.summary?.trim() || title,
     url: response.htmlLink ?? null,
-    start: start.toISOString(),
-    end: end.toISOString(),
+    start: formatEventTime(response.start) ?? start.toISOString(),
+    end: formatEventTime(response.end) ?? end.toISOString(),
   };
 }
 
-export function formatCalendarDateTime(value: string | null, timeZone = DEFAULT_TIMEZONE): string {
+export async function addCalendarEvent(
+  title: string,
+  dateTimeInput: string
+): Promise<CreatedGoogleCalendarEvent> {
+  return createCalendarEvent({
+    title,
+    start: dateTimeInput,
+  });
+}
+
+export function formatCalendarDateTime(
+  value: string | null,
+  timeZone = DEFAULT_TIMEZONE
+): string {
   if (!value) {
     return '未設定';
   }
@@ -265,12 +337,18 @@ export function formatCalendarDateTime(value: string | null, timeZone = DEFAULT_
   }
 
   const parsed = new Date(value);
+
   if (Number.isNaN(parsed.getTime())) {
     return value;
   }
 
-  return parsed.toLocaleString('ja-JP', {
-    hour12: false,
+  return new Intl.DateTimeFormat('ja-JP', {
     timeZone,
-  });
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(parsed);
 }
