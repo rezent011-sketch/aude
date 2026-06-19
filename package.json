@@ -28,6 +28,7 @@
     "@types/jszip": "^3.4.0",
     "@types/node-cron": "^3.0.11",
     "@types/pdfkit": "^0.17.6",
+    "better-sqlite3": "^12.11.1",
     "discord.js": "^14.16.3",
     "dotenv": "^16.5.0",
     "exceljs": "^4.4.0",
@@ -41,6 +42,7 @@
     "stripe": "^22.1.1"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
     "@types/jest": "^30.0.0",
     "@types/node": "^22.15.18",
     "jest": "^30.4.2",

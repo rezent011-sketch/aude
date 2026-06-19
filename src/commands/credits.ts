@@ -1,24 +1,26 @@
 import {
   ChatInputCommandInteraction,
   EmbedBuilder,
+  MessageFlags,
   SlashCommandBuilder,
 } from 'discord.js';
-import { creditsManager } from '../credits/manager';
+import { creditsService } from '../services/creditsService';
 
-function formatUsageHistory(
-  transactions: ReturnType<typeof creditsManager.getRecentUsageHistory>
+function formatTransactions(
+  transactions: ReturnType<typeof creditsService.getTransactionHistory>,
 ): string {
   if (transactions.length === 0) {
-    return '直近の利用履歴はありません。';
+    return '取引履歴はありません。';
   }
 
   return transactions
+    .slice(0, 10)
     .map((transaction) => {
-      const timestamp = new Date(transaction.createdAt).toLocaleString('ja-JP', {
+      const signedAmount = transaction.type === 'credit' ? `+${transaction.amount}` : `-${transaction.amount}`;
+      const timestamp = new Date(transaction.created_at).toLocaleString('ja-JP', {
         hour12: false,
       });
-
-      return `- ${timestamp} | -${transaction.amount} | ${transaction.description ?? '利用'}`;
+      return `${timestamp} | ${signedAmount} | ${transaction.description ?? '-'}`;
     })
     .join('\n');
 }
@@ -26,27 +28,91 @@ function formatUsageHistory(
 export const creditsCommand = {
   data: new SlashCommandBuilder()
     .setName('credits')
-    .setDescription('残クレジットと直近の使用履歴を表示します'),
+    .setDescription('クレジット残高、履歴、購入リンクを管理します')
+    .addSubcommand((subcommand) =>
+      subcommand.setName('balance').setDescription('現在の残高を表示します'),
+    )
+    .addSubcommand((subcommand) =>
+      subcommand.setName('history').setDescription('取引履歴を表示します'),
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName('buy')
+        .setDescription('Stripe Checkoutでクレジットを購入します')
+        .addIntegerOption((option) =>
+          option
+            .setName('amount')
+            .setDescription('購入するクレジット数')
+            .setRequired(true)
+            .setMinValue(1),
+        ),
+    ),
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
-    const discordId = interaction.user.id;
+    const subcommand = interaction.options.getSubcommand();
+    const userId = interaction.user.id;
     const username = interaction.user.username;
-    const remainingCredits = creditsManager.getRemainingCredits(discordId, username);
-    const recentUsage = creditsManager.getRecentUsageHistory(discordId, username, 5);
 
-    const embed = new EmbedBuilder()
-      .setColor(0x2b2d31)
-      .setTitle('クレジット残高')
-      .setDescription(`残クレジット: **${remainingCredits}**`)
-      .addFields({
-        name: '直近5件の使用履歴',
-        value: formatUsageHistory(recentUsage),
-      })
-      .setTimestamp();
+    if (subcommand === 'balance') {
+      const balance = creditsService.getBalance(userId, username);
+      await interaction.reply({
+        embeds: [
+          new EmbedBuilder()
+            .setColor(0x1f8b4c)
+            .setTitle('クレジット残高')
+            .setDescription(`現在の残高は **${balance}** クレジットです。`)
+            .setTimestamp(),
+        ],
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    if (subcommand === 'history') {
+      const transactions = creditsService.getTransactionHistory(userId, username);
+      await interaction.reply({
+        embeds: [
+          new EmbedBuilder()
+            .setColor(0x5865f2)
+            .setTitle('クレジット取引履歴')
+            .setDescription(formatTransactions(transactions))
+            .setTimestamp(),
+        ],
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    if (subcommand === 'buy') {
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+      const amount = interaction.options.getInteger('amount', true);
+      const session = await creditsService.createCheckoutSession({
+        userId,
+        username,
+        amount,
+      });
+
+      await interaction.editReply({
+        embeds: [
+          new EmbedBuilder()
+            .setColor(0x635bff)
+            .setTitle('Stripe Checkout')
+            .setDescription(
+              `以下のURLから ${amount} クレジットを購入してください。\n${session.url ?? '-'}`,
+            )
+            .addFields(
+              { name: '購入クレジット', value: String(amount), inline: true },
+              { name: '決済金額', value: `¥${amount.toLocaleString('ja-JP')}`, inline: true },
+            )
+            .setTimestamp(),
+        ],
+      });
+      return;
+    }
 
     await interaction.reply({
-      embeds: [embed],
-      ephemeral: true,
+      content: '不正なサブコマンドです。',
+      flags: MessageFlags.Ephemeral,
     });
   },
 };

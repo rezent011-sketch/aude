@@ -17,6 +17,7 @@ import { parseUtageWebhook, forwardUtageToDiscord } from './integrations/utage';
 import { parseLmessageWebhook, forwardLmessageToDiscord } from './integrations/lmessage';
 import { handleLineWebhook, LineWebhookBody } from './handlers/lineHandler';
 import { getDiscordClient } from './services/discordClient';
+import { creditsService } from './services/creditsService';
 import vaultService from './services/vaultService';
 
 interface DashboardUserRow {
@@ -2755,6 +2756,25 @@ export function startApiServer(): http.Server {
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error';
         sendJson(res, 500, { error: message });
+      }
+      return;
+    }
+
+    if (method === 'POST' && url.pathname === '/webhooks/stripe') {
+      try {
+        const rawBody = await readRawBody(req);
+        const signatureHeader = req.headers['stripe-signature'];
+        const signature = Array.isArray(signatureHeader) ? signatureHeader[0] : signatureHeader;
+        if (!signature) {
+          sendJson(res, 400, { error: 'Missing stripe-signature header' });
+          return;
+        }
+
+        await creditsService.handleStripeWebhook(rawBody, signature);
+        sendJson(res, 200, { received: true });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        sendJson(res, 400, { error: message });
       }
       return;
     }
